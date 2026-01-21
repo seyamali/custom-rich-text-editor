@@ -1,0 +1,44 @@
+/* Slash Command Menu */
+.slash-menu {
+    position: absolute;
+    z-index: 2000;
+    width: 200px;
+    background: white;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    display: none;
+    flex-direction: column;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.slash-menu.visible {
+    display: flex;
+}
+
+.slash-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #333;
+}
+
+.slash-item:hover,
+.slash-item.selected {
+    background-color: #f0f0f0;
+    color: #007bff;
+}
+
+.slash-item-icon {
+    font-size: 16px;
+    width: 20px;
+    text-align: center;
+}
+
+.slash-item-label {
+    flex: 1;
+}

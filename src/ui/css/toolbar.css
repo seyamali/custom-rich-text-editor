@@ -1,0 +1,87 @@
+/* Toolbar Styles */
+.toolbar {
+    padding: 8px;
+    background: #fafafa;
+    border-bottom: 1px solid #ccced1;
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.toolbar button {
+    white-space: nowrap;
+    padding: 4px 10px;
+    min-width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid transparent;
+    /* Cleaner border */
+    background: transparent;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    color: #444;
+}
+
+.toolbar button:hover {
+    background: #edf2f7;
+    color: #2d3748;
+}
+
+.toolbar button.active {
+    background: #e2e8f0;
+    color: #007bff;
+    border-color: #cbd5e0;
+    font-weight: 600;
+}
+
+.toolbar-select {
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid #cbd5e0;
+    background: white;
+    font-size: 14px;
+    color: #4a5568;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.toolbar-select:hover {
+    border-color: #a0aec0;
+    background: #f7fafc;
+}
+
+#block-type-select option {
+    padding: 8px;
+    font-size: 14px;
+}
+
+#block-type-select option[value="h1"] {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+#block-type-select option[value="h2"] {
+    font-size: 16px;
+    font-weight: bold;
+}
+
+#block-type-select option[value="h3"] {
+    font-size: 15px;
+    font-weight: bold;
+}
+
+#block-type-select option[value="paragraph"] {
+    font-size: 14px;
+}
+
+.divider {
+    width: 1px;
+    height: 24px;
+    background: #ddd;
+    margin: 0 4px;
+}

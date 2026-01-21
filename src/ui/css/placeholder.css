@@ -1,0 +1,16 @@
+/* Placeholder Fields */
+.editor-placeholder-field {
+    background-color: #ffd700;
+    color: #333;
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: default;
+    user-select: none;
+    font-size: 0.9em;
+    border: 1px solid #d4b400;
+}
+
+.editor-placeholder-field:hover {
+    background-color: #ffea00;
+}

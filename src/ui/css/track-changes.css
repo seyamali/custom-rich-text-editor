@@ -1,0 +1,42 @@
+/* Suggestion Nodes */
+.suggestion-node {
+    position: relative;
+    cursor: help;
+}
+
+.suggestion-insert {
+    color: #2e7d32;
+    text-decoration: underline;
+    background-color: #e8f5e9;
+}
+
+.suggestion-delete {
+    color: #c62828;
+    text-decoration: line-through;
+    background-color: #ffebee;
+}
+
+.suggestion-node:hover::after {
+    content: attr(data-author);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    white-space: nowrap;
+    z-index: 10;
+}
+
+/* Tracking Status */
+#track-changes-btn.on {
+    background-color: #2e7d32;
+    color: white;
+}
+
+#track-changes-btn.off {
+    opacity: 0.7;
+}

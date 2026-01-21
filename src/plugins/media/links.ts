@@ -1,5 +1,6 @@
 import { TOGGLE_LINK_COMMAND, registerAutoLink, toggleLink } from '@lexical/link';
 import { COMMAND_PRIORITY_EDITOR } from 'lexical';
+import { EditorSDK } from '../../core/sdk';
 import type { EditorPlugin } from '../../core/registry';
 
 // Standard URL Matcher for Auto-detection
@@ -7,7 +8,8 @@ const URL_MATCHER = /((https?:\/\/(www\.)?)|(www\.))[-a-zA-Z0-9@:%._+~#=]{1,256}
 
 export const LinksPlugin: EditorPlugin = {
     name: 'links',
-    init: (editor) => {
+    init: (sdk: EditorSDK) => {
+        const editor = sdk.getLexicalEditor();
         // Fix: Explicitly provide 'matchers' and an empty 'changeHandlers'
         registerAutoLink(editor, {
             matchers: [
@@ -29,7 +31,7 @@ export const LinksPlugin: EditorPlugin = {
         });
 
         // Register the command listener for TOGGLE_LINK_COMMAND
-        editor.registerCommand(
+        sdk.registerCommand(
             TOGGLE_LINK_COMMAND,
             (payload: any) => {
                 if (payload === null) {

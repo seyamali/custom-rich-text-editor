@@ -1,0 +1,36 @@
+/* Page Break Node Visualization */
+.editor-page-break {
+    border-top: 1px dashed #999;
+    padding: 10px 0;
+    margin: 20px 0;
+    text-align: center;
+    color: #999;
+    font-size: 12px;
+    user-select: none;
+    background-color: #fafafa;
+    position: relative;
+    page-break-after: always;
+    /* For printing */
+}
+
+.editor-page-break span {
+    background-color: #fff;
+    padding: 0 10px;
+    position: relative;
+    top: -9px;
+    /* Align deeply with the line */
+}
+
+@media print {
+    .editor-page-break {
+        border: none;
+        margin: 0;
+        padding: 0;
+        height: 0;
+        background: none;
+    }
+
+    .editor-page-break span {
+        display: none;
+    }
+}

@@ -1,0 +1,44 @@
+/* Find & Replace Dialog */
+.find-replace-dialog {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    position: absolute;
+    top: 50px;
+    right: 20px;
+    background: white;
+    border: 1px solid #ccc;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 10px;
+    border-radius: 5px;
+    z-index: 1000;
+    width: 250px;
+}
+
+.find-replace-dialog.hidden {
+    display: none;
+}
+
+.find-replace-dialog input {
+    padding: 5px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+}
+
+.find-replace-buttons {
+    display: flex;
+    gap: 5px;
+}
+
+.find-replace-buttons button {
+    flex: 1;
+    padding: 5px;
+    cursor: pointer;
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+}
+
+.find-replace-buttons button:hover {
+    background-color: #e0e0e0;
+}

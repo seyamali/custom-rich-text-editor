@@ -1,52 +1,55 @@
 import './style.css';
+import './spare.css';
+import { initSpareLogic } from './spare';
 import { MyUniversalEditor } from './core/engine';
-// Import our plugins
-import { BasicStylesPlugin, FORMAT_COMMANDS } from './plugins/formatting/basic-styles';
-import { HistoryPlugin, HISTORY_COMMANDS } from './plugins/essentials/history';
-import { ClipboardPlugin, REMOVE_FORMATTING_COMMAND } from './plugins/essentials/clipboard';
-import { LIST_COMMANDS, ListsPlugin } from './plugins/layout/lists';
-import { HeadingsPlugin, insertHorizontalRule, setBlockType } from './plugins/layout/headings';
-import { insertLink, LinksPlugin } from './plugins/media/links';
-import { ImagesPlugin, insertImage } from './plugins/media/images';
+import { EDITOR_LAYOUT_HTML } from './ui/layout';
+import { setupToolbar } from './ui/toolbar-setup';
+
+// --- PLUGINS ---
+import { BasicStylesPlugin } from './plugins/formatting/basic-styles';
+import { HistoryPlugin } from './plugins/essentials/history';
+import { ClipboardPlugin } from './plugins/essentials/clipboard';
+import { ListsPlugin } from './plugins/layout/lists';
+import { HeadingsPlugin } from './plugins/layout/headings';
+import { LinksPlugin } from './plugins/media/links';
+import { ImagesPlugin } from './plugins/media/images';
+import { TablesPlugin } from './plugins/layout/tables';
+import { CodeBlockPlugin } from './plugins/advanced/code-blocks';
+import { TrackChangesPlugin } from './plugins/collaboration/track-changes';
+import { AutosavePlugin, hasAutosavedState, loadAutosavedState } from './plugins/productivity/autosave';
+import { FormatPainterPlugin } from './plugins/productivity/format-painter';
+import { PlaceholderPlugin } from './plugins/advanced/placeholder';
+import { SlashCommandPlugin } from './plugins/productivity/slash-commands';
+import { PageBreakPlugin } from './plugins/page-layout/page-break';
+import { DocumentOutlinePlugin } from './plugins/productivity/document-outline';
+import { FootnotePlugin } from './plugins/advanced/footnote';
+import { TableOfContentsPlugin } from './plugins/page-layout/toc-plugin';
+import { HelloWorldPlugin } from './plugins/custom-plugin-demo';
+import { ProductivityPlugin } from './plugins/productivity/productivity-pack';
+import { ToolbarCustomization } from './plugins/configuration/toolbar-customization';
+import { setupToolbarSettingsUI } from './plugins/configuration/toolbar-ui';
+import { I18nManager } from './plugins/configuration/i18n';
+import { AccessibilityManager } from './plugins/configuration/accessibility';
+import { UploadManager } from './plugins/upload/upload-manager';
+import { Base64UploadAdapter, CKBoxUploadAdapter, CustomUploadAdapter } from './plugins/upload/adapters';
+
+// --- UI SETUP IMPORTS ---
+import { setupRevisionHistoryUI } from './plugins/collaboration/revision-ui';
+import { setupFindReplaceUI } from './plugins/productivity/find-replace-ui';
+import { EmojiPlugin } from './plugins/productivity/emoji';
+import { setupEmojiUI } from './plugins/productivity/emoji-ui';
 
 const appElement = document.querySelector<HTMLDivElement>('#app');
 
 if (appElement) {
-  appElement.innerHTML = `
-        <div class="editor-wrapper">
-            <div id="toolbar" class="toolbar">
-                <button id="undo-btn">↶ Undo</button>
-                <button id="redo-btn">↷ Redo</button>
-                <button id="bold-btn"><b>B</b></button>
-                <button id="clear-btn">Clear Format</button>
-                <button id="bullet-btn">Bulleted List</button>
-<button id="number-btn">Numbered List</button>
-<button id="h1-btn">H1</button>
-<button id="h2-btn">H2</button>
-<button id="p-btn">P</button>
-<button id="italic-btn"><i>I</i></button>
-<button id="underline-btn"><u>U</u></button>
-<button id="strike-btn"><s>S</s></button>
-<button id="sub-btn">x<sub>2</sub></button>
-<button id="sup-btn">x<sup>2</sup></button>
-<button id="code-btn"><code>&lt;/&gt;</code></button>
-<button id="hr-btn">Divider</button>
-<button id="indent-btn">Indent ⇢</button>
-<button id="link-btn">🔗 Link</button>
-<button id="outdent-btn">⇠ Outdent</button>
-<button id="image-btn">🖼️ Image</button>
-
-            </div>
-            <div id="editor-canvas" class="editor-container"></div>
-        </div>
-    `;
+  initSpareLogic();
+  appElement.innerHTML = EDITOR_LAYOUT_HTML;
 
   const canvas = document.querySelector<HTMLDivElement>('#editor-canvas');
   if (canvas) {
-    // 1. Initialize Engine
     const editor = new MyUniversalEditor(canvas);
 
-    // 2. Load Plugins (The CKEditor way)
+    // 1. Load Plugins
     editor.use(BasicStylesPlugin);
     editor.use(HistoryPlugin);
     editor.use(ClipboardPlugin);
@@ -54,58 +57,46 @@ if (appElement) {
     editor.use(HeadingsPlugin);
     editor.use(LinksPlugin);
     editor.use(ImagesPlugin);
+    editor.use(TablesPlugin);
+    editor.use(CodeBlockPlugin);
+    editor.use(TrackChangesPlugin);
+    editor.use(AutosavePlugin);
+    editor.use(FormatPainterPlugin);
+    editor.use(EmojiPlugin);
+    editor.use(PlaceholderPlugin);
+    editor.use(SlashCommandPlugin);
+    editor.use(PageBreakPlugin);
+    editor.use(DocumentOutlinePlugin);
+    editor.use(FootnotePlugin);
+    editor.use(TableOfContentsPlugin);
+    editor.use(HelloWorldPlugin);
+    editor.use(ProductivityPlugin);
 
+    const internalEditor = editor.getInternalEditor();
 
-    // 3. Connect UI to Commands
-    document.getElementById('undo-btn')?.addEventListener('click', () => editor.execute(HISTORY_COMMANDS.UNDO.command));
-    document.getElementById('redo-btn')?.addEventListener('click', () => editor.execute(HISTORY_COMMANDS.REDO.command));
-    document.getElementById('bold-btn')?.addEventListener('click', () => editor.execute(FORMAT_COMMANDS.BOLD.command, FORMAT_COMMANDS.BOLD.payload));
-    document.getElementById('clear-btn')?.addEventListener('click', () => {
-      editor.execute(REMOVE_FORMATTING_COMMAND, undefined);
-    });
-    document.getElementById('bullet-btn')?.addEventListener('click', () =>
-      editor.execute(LIST_COMMANDS.BULLET.command)
-    );
-    document.getElementById('number-btn')?.addEventListener('click', () =>
-      editor.execute(LIST_COMMANDS.NUMBER.command)
-    );
-    document.getElementById('h1-btn')?.addEventListener('click', () => setBlockType(editor, 'h1'));
-    document.getElementById('h2-btn')?.addEventListener('click', () => setBlockType(editor, 'h2'));
-    document.getElementById('p-btn')?.addEventListener('click', () => setBlockType(editor, 'paragraph'));
-    document.getElementById('bold-btn')?.addEventListener('click', () =>
-      editor.execute(FORMAT_COMMANDS.BOLD.command, FORMAT_COMMANDS.BOLD.payload));
+    // 2. Setup UI Handlers
+    setupToolbar(editor, internalEditor);
+    setupRevisionHistoryUI(internalEditor);
+    setupFindReplaceUI(internalEditor);
+    setupEmojiUI(internalEditor);
+    setupToolbarSettingsUI();
+    ToolbarCustomization.init();
+    I18nManager.init();
+    AccessibilityManager.init();
 
-    document.getElementById('italic-btn')?.addEventListener('click', () =>
-      editor.execute(FORMAT_COMMANDS.ITALIC.command, FORMAT_COMMANDS.ITALIC.payload));
+    // 3. Initialize File Management
+    UploadManager.register(Base64UploadAdapter);
+    UploadManager.register(CKBoxUploadAdapter);
+    UploadManager.register(CustomUploadAdapter);
+    UploadManager.setAdapter('base64');
 
-    document.getElementById('underline-btn')?.addEventListener('click', () =>
-      editor.execute(FORMAT_COMMANDS.UNDERLINE.command, FORMAT_COMMANDS.UNDERLINE.payload));
-
-    document.getElementById('strike-btn')?.addEventListener('click', () =>
-      editor.execute(FORMAT_COMMANDS.STRIKETHROUGH.command, FORMAT_COMMANDS.STRIKETHROUGH.payload));
-    document.getElementById('sub-btn')?.addEventListener('click', () =>
-      editor.execute(FORMAT_COMMANDS.SUBSCRIPT.command, FORMAT_COMMANDS.SUBSCRIPT.payload));
-
-    document.getElementById('sup-btn')?.addEventListener('click', () =>
-      editor.execute(FORMAT_COMMANDS.SUPERSCRIPT.command, FORMAT_COMMANDS.SUPERSCRIPT.payload));
-    document.getElementById('code-btn')?.addEventListener('click', () =>
-      editor.execute(FORMAT_COMMANDS.CODE.command, FORMAT_COMMANDS.CODE.payload));
-
-    document.getElementById('hr-btn')?.addEventListener('click', () => {
-      insertHorizontalRule(editor.getInternalEditor());
-    });
-    document.getElementById('indent-btn')?.addEventListener('click', () =>
-      editor.execute(LIST_COMMANDS.INDENT.command)
-    );
-
-    document.getElementById('outdent-btn')?.addEventListener('click', () =>
-      editor.execute(LIST_COMMANDS.OUTDENT.command)
-    );
-    document.getElementById('link-btn')?.addEventListener('click', () => {
-      insertLink(editor);
-    });
-    document.getElementById('image-btn')?.addEventListener('click', () => {
-      insertImage(editor);
-    });
+    // 4. Autosave Logic (Restore Check)
+    if (hasAutosavedState()) {
+      setTimeout(() => {
+        if (confirm("An unsaved draft was found. Do you want to restore it?")) {
+          loadAutosavedState(internalEditor);
+        }
+      }, 500);
+    }
   }
 }

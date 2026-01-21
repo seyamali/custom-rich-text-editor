@@ -1,0 +1,60 @@
+/* Table of Contents Node */
+.editor-toc {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    padding: 15px;
+    margin: 20px 0;
+    font-family: 'Inter', sans-serif;
+}
+
+.toc-title {
+    font-weight: bold;
+    font-size: 1.1em;
+    margin-bottom: 10px;
+    color: #343a40;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.toc-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.toc-item {
+    padding: 5px 0;
+    cursor: pointer;
+    color: #007bff;
+    transition: color 0.2s;
+}
+
+.toc-item:hover {
+    color: #0056b3;
+    text-decoration: underline;
+}
+
+.toc-h1 {
+    margin-left: 0;
+    font-weight: 600;
+}
+
+.toc-h2 {
+    margin-left: 20px;
+}
+
+.toc-h3 {
+    margin-left: 40px;
+    font-size: 0.95em;
+}
+
+.toc-h4 {
+    margin-left: 60px;
+    font-size: 0.9em;
+}
+
+.toc-empty {
+    color: #6c757d;
+    font-style: italic;
+}

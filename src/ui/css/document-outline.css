@@ -1,0 +1,87 @@
+/* Editor Main Area to hold Canvas + Outline */
+.editor-main-area {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+    height: calc(100vh - 100px);
+    /* Adjust based on toolbar height */
+}
+
+.editor-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+/* Document Outline Styles */
+.document-outline {
+    width: 250px;
+    border-left: 1px solid #ddd;
+    background: #f9f9f9;
+    overflow-y: auto;
+    padding: 15px;
+    font-size: 13px;
+    transition: transform 0.3s ease;
+}
+
+.document-outline.hidden {
+    display: none;
+}
+
+.document-outline h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 14px;
+    text-transform: uppercase;
+    color: #666;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 5px;
+}
+
+.outline-item {
+    cursor: pointer;
+    padding: 4px 0;
+    color: #333;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    border-radius: 4px;
+}
+
+.outline-item:hover {
+    background-color: #e0e0e0;
+    color: #007bff;
+}
+
+/* Indentation based on Heading Level */
+.outline-h1 {
+    padding-left: 0;
+    font-weight: bold;
+}
+
+.outline-h2 {
+    padding-left: 10px;
+}
+
+.outline-h3 {
+    padding-left: 20px;
+}
+
+.outline-h4 {
+    padding-left: 30px;
+}
+
+.outline-h5 {
+    padding-left: 40px;
+}
+
+.outline-h6 {
+    padding-left: 50px;
+}
+
+/* Toggle Button Style (can be added to toolbar) */
+#outline-toggle-btn.active {
+    background-color: #e0e0e0;
+    color: #007bff;
+}

@@ -8,6 +8,16 @@ import { PluginRegistry, type EditorPlugin } from './registry';
 import { HorizontalRuleNode } from '@lexical/react/LexicalHorizontalRuleNode';
 import { LinkNode, AutoLinkNode } from '@lexical/link';
 import { ImageNode } from '../plugins/media/image-node';
+import { TableNode, TableRowNode, TableCellNode } from '@lexical/table';
+import { YouTubeNode } from '../plugins/advanced/youtube-node.ts';
+import { HTMLSnippetNode } from '../plugins/advanced/html-snippet-node.ts';
+import { CodeNode, CodeHighlightNode } from '@lexical/code';
+import { SuggestionNode } from '../plugins/collaboration/suggestion-node.ts';
+import { PlaceholderNode } from '../plugins/advanced/placeholder-node.ts';
+import { PageBreakNode } from '../plugins/page-layout/page-break-node';
+import { FootnoteNode } from '../plugins/advanced/footnote-node';
+import { TableOfContentsNode } from '../plugins/page-layout/toc-node';
+
 
 export class MyUniversalEditor {
     private editor: LexicalEditor;
@@ -25,7 +35,20 @@ export class MyUniversalEditor {
                 HorizontalRuleNode,
                 LinkNode,
                 AutoLinkNode,
-                ImageNode
+                ImageNode,
+                TableNode,
+                TableRowNode,
+                TableCellNode,
+                YouTubeNode,
+                HTMLSnippetNode,
+                CodeNode,
+                CodeHighlightNode,
+                CodeHighlightNode,
+                SuggestionNode,
+                PlaceholderNode,
+                PageBreakNode,
+                FootnoteNode,
+                TableOfContentsNode
             ], // Add these here!
             theme: {
                 heading: {
@@ -56,6 +79,43 @@ export class MyUniversalEditor {
                 link: 'editor-link',
                 autolink: 'editor-autolink',
                 image: 'editor-image',
+                table: 'editor-table',
+                tableRow: 'editor-table-row',
+                tableCell: 'editor-table-cell',
+                tableCellHeader: 'editor-table-cell-header',
+                code: 'editor-code',
+                codeHighlight: {
+                    at: 'editor-code-attr',
+                    attr: 'editor-code-attr',
+                    boolean: 'editor-code-boolean',
+                    builtin: 'editor-code-builtin',
+                    cdata: 'editor-code-comment',
+                    char: 'editor-code-string',
+                    class: 'editor-code-class',
+                    'class-name': 'editor-code-class',
+                    comment: 'editor-code-comment',
+                    constant: 'editor-code-constant',
+                    deleted: 'editor-code-deleted',
+                    doctype: 'editor-code-comment',
+                    entity: 'editor-code-entity',
+                    function: 'editor-code-function',
+                    important: 'editor-code-important',
+                    inserted: 'editor-code-inserted',
+                    keyword: 'editor-code-keyword',
+                    namespace: 'editor-code-variable',
+                    number: 'editor-code-number',
+                    operator: 'editor-code-operator',
+                    prolog: 'editor-code-comment',
+                    property: 'editor-code-property',
+                    punctuation: 'editor-code-punctuation',
+                    regex: 'editor-code-regex',
+                    selector: 'editor-code-selector',
+                    string: 'editor-code-string',
+                    symbol: 'editor-code-property',
+                    tag: 'editor-code-tag',
+                    url: 'editor-code-url',
+                    variable: 'editor-code-variable'
+                }
             },
             onError: (err) => console.error(err)
         });

@@ -1,39 +1,42 @@
 import {
     $getSelection,
     $isRangeSelection,
-    COMMAND_PRIORITY_CRITICAL,
     createCommand,
-    $isTextNode,
-    type LexicalCommand
+    type LexicalCommand,
+    $createParagraphNode,
+    COMMAND_PRIORITY_EDITOR
 } from 'lexical';
+import { $patchStyleText, $setBlocksType } from '@lexical/selection';
+import { EditorSDK } from '../../core/sdk';
 import type { EditorPlugin } from '../../core/registry';
 
-// 1. Properly create the command object
+// This is the missing exported member
 export const REMOVE_FORMATTING_COMMAND: LexicalCommand<void> = createCommand('REMOVE_FORMATTING_COMMAND');
 
 export const ClipboardPlugin: EditorPlugin = {
-    name: 'clipboard-essentials',
-    init: (editor) => {
-        // 2. Register the command using the object, not a string
-        editor.registerCommand(
+    name: 'clipboard',
+    init: (sdk: EditorSDK) => {
+        // Register the listener for the command
+        sdk.registerCommand(
             REMOVE_FORMATTING_COMMAND,
             () => {
-                editor.update(() => {
-                    const selection = $getSelection();
-                    if ($isRangeSelection(selection)) {
-                        selection.getNodes().forEach((node) => {
-                            // 3. Fix: Check if it's a TextNode before calling setFormat/setStyle
-                            if ($isTextNode(node)) {
-                                node.setFormat(0);
-                                node.setStyle('');
-                            }
-                        });
-                    }
-                });
+                const selection = $getSelection();
+                if ($isRangeSelection(selection)) {
+                    // 1. Clear inline styles
+                    $patchStyleText(selection, {
+                        'font-weight': null,
+                        'font-style': null,
+                        'text-decoration': null,
+                        'color': null,
+                        'background-color': null,
+                    });
+
+                    // 2. Reset block types to paragraph
+                    $setBlocksType(selection, () => $createParagraphNode());
+                }
                 return true;
             },
-            COMMAND_PRIORITY_CRITICAL
+            COMMAND_PRIORITY_EDITOR
         );
-        console.log("Clipboard & Clear Format initialized");
     }
 };

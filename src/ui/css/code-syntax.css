@@ -1,0 +1,52 @@
+/* Code Blocks */
+.editor-code {
+    background-color: #282c34;
+    font-family: 'Courier New', Courier, monospace;
+    display: block;
+    padding: 15px;
+    margin: 10px 0;
+    line-height: 1.5;
+    border-radius: 5px;
+    color: #abb2bf;
+    overflow-x: auto;
+    white-space: pre;
+}
+
+/* Syntax Highlighting */
+.editor-code-keyword {
+    color: #c678dd;
+}
+
+.editor-code-function {
+    color: #61afef;
+}
+
+.editor-code-string {
+    color: #98c379;
+}
+
+.editor-code-comment {
+    color: #5c6370;
+    font-style: italic;
+}
+
+.editor-code-variable {
+    color: #e06c75;
+}
+
+.editor-code-number {
+    color: #d19a66;
+}
+
+/* Source Editor Area */
+.source-view-area {
+    width: 100%;
+    height: 400px;
+    font-family: 'Courier New', monospace;
+    padding: 15px;
+    background: #282c34;
+    color: #abb2bf;
+    border: 1px solid #181a1f;
+    outline: none;
+    resize: vertical;
+}

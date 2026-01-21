@@ -1,0 +1,85 @@
+/* Standard Variables and Reset */
+:root {
+    font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+    background-color: #f4f5f7;
+}
+
+#app {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 20px;
+}
+
+.editor-wrapper {
+    background: white;
+    border: 1px solid #ccced1;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    overflow: visible;
+    /* Changed from hidden to show popovers */
+    position: relative;
+}
+
+.editor-wrapper:focus-within {
+    border-color: #0782ed;
+}
+
+.divider {
+    display: inline-block;
+    width: 1px;
+    height: 24px;
+    background-color: #ddd;
+    margin: 0 8px;
+    vertical-align: middle;
+}
+
+/* RTL Support */
+.editor-wrapper[dir="rtl"] {
+    text-align: right;
+}
+
+.editor-wrapper[dir="rtl"] .toolbar {
+    flex-direction: row-reverse;
+}
+
+.editor-wrapper[dir="rtl"] .divider {
+    border-right: 1px solid #ddd;
+    border-left: none;
+}
+
+.editor-wrapper[dir="rtl"] .document-outline {
+    border-left: none;
+    border-right: 1px solid #ddd;
+}
+
+.editor-wrapper[dir="rtl"] .revision-panel {
+    right: auto;
+    left: 0;
+    border-left: none;
+    border-right: 1px solid #ddd;
+}
+
+.editor-wrapper[dir="rtl"] .editor-placeholder-field {
+    direction: rtl;
+}
+
+/* Accessibility */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Clearer Focus Indicators */
+button:focus-visible,
+select:focus-visible,
+.editor-container:focus-visible {
+    outline: 3px solid #007bff;
+    outline-offset: 2px;
+}
