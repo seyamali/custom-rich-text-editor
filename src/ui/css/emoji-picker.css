@@ -45,8 +45,16 @@
     color: #ef4444;
 }
 
+
+.emoji-search-area {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    margin-bottom: 4px;
+}
 .emoji-search-area input {
     width: 100%;
+    box-sizing: border-box;
     padding: 8px 12px;
     border: 1px solid #e5e7eb;
     border-radius: 6px;

@@ -42,16 +42,32 @@ export class PlaceholderNode extends DecoratorNode<HTMLElement> {
         };
     }
 
+
     createDOM(config: EditorConfig): HTMLElement {
         const span = document.createElement('span');
         span.className = 'editor-placeholder-field';
         span.innerText = `{{${this.__name}}}`;
+        span.setAttribute('contenteditable', 'false');
+        span.setAttribute('tabindex', '0');
+        span.setAttribute('role', 'button');
+        span.setAttribute('aria-label', `Merge field: ${this.__name}`);
+        span.title = `Merge field: ${this.__name}`;
+        // Styling for highlight, border, and tooltip
+        span.style.background = '#f3f4f6';
+        span.style.borderRadius = '6px';
+        span.style.border = '1px dashed #cbd5e1';
+        span.style.padding = '2px 6px';
+        span.style.margin = '0 2px';
+        span.style.cursor = 'pointer';
+        span.style.userSelect = 'none';
         return span;
     }
 
     updateDOM(prevNode: PlaceholderNode, dom: HTMLElement): boolean {
         if (prevNode.__name !== this.__name) {
             dom.innerText = `{{${this.__name}}}`;
+            dom.title = `Merge field: ${this.__name}`;
+            dom.setAttribute('aria-label', `Merge field: ${this.__name}`);
         }
         return false;
     }
@@ -59,7 +75,19 @@ export class PlaceholderNode extends DecoratorNode<HTMLElement> {
     decorate(): HTMLElement {
         const span = document.createElement('span');
         span.className = 'editor-placeholder-inner';
-        span.innerText = this.__name;
+        span.innerText = `{{${this.__name}}}`;
+        span.setAttribute('contenteditable', 'false');
+        span.setAttribute('tabindex', '0');
+        span.setAttribute('role', 'button');
+        span.setAttribute('aria-label', `Merge field: ${this.__name}`);
+        span.title = `Merge field: ${this.__name}`;
+        span.style.background = '#f3f4f6';
+        span.style.borderRadius = '6px';
+        span.style.border = '1px dashed #cbd5e1';
+        span.style.padding = '2px 6px';
+        span.style.margin = '0 2px';
+        span.style.cursor = 'pointer';
+        span.style.userSelect = 'none';
         return span;
     }
 

@@ -11,6 +11,22 @@ const EMOJI_CATEGORIES: Record<string, string[]> = {
 };
 
 export function setupEmojiUI(internalEditor: LexicalEditor) {
+
+    // Emoji keyword mapping for search
+    const EMOJI_KEYWORDS: Record<string, string[]> = {
+        '😀': ['smile', 'happy', 'grin'],
+        '😂': ['laugh', 'joy', 'tears'],
+        '😍': ['love', 'heart', 'eyes'],
+        '😎': ['cool', 'sunglasses'],
+        '😭': ['cry', 'sad', 'tears'],
+        '😡': ['angry', 'mad'],
+        '👍': ['thumbs up', 'approve'],
+        '👎': ['thumbs down', 'disapprove'],
+        '👏': ['clap', 'applause'],
+        '🙏': ['pray', 'thanks'],
+        // ...add more as needed
+    };
+
     const emojiDialog = document.getElementById('emoji-dialog');
     const emojiGrid = document.getElementById('emoji-grid');
     const closeBtn = document.getElementById('close-emoji-btn');
@@ -35,24 +51,17 @@ export function setupEmojiUI(internalEditor: LexicalEditor) {
             source = EMOJI_CATEGORIES[currentCategory] || [];
         }
 
-        // Apply search filter (if any logic existed map emoji to keyword, but direct emoji search is hard for users)
-        // Wait, searching emojis by text? E.g. "smile". We don't have keyword map here.
-        // For this iteration, we iterate basic match if we had names.
-        // Since we only have raw emojis, search is tricky without a mapping table.
-        // Let's implement a basic "Recent" or just rely on categories for now if mapping is too large.
-        // Or, we can use a small mapping for common ones?
-        // Let's stick to proper categories functionality for now as primary nav.
-
-        // But the requirements asked for a search bar.
-        // I'll skip complex search logic implementation in this 'write_to_file' to keep it robust
-        // unless I had a mapping library. I will leave the search input but maybe just filter by explicit chars?
-        // No, that's useless.
-        // Let's just create a dummy mapping for the demo.
-
-        const filtered = source.filter(e => {
-            // Very basic "if user types the emoji itself"
-            return true;
-        });
+        // Filter by search
+        let filtered: string[] = source;
+        if (filterText.trim()) {
+            const lower = filterText.trim().toLowerCase();
+            filtered = source.filter(e => {
+                // Match by emoji itself or keyword
+                if (e.includes(lower)) return true;
+                const keywords = EMOJI_KEYWORDS[e] || [];
+                return keywords.some(k => k.includes(lower));
+            });
+        }
 
         filtered.forEach(emoji => {
             const btn = document.createElement('button');
@@ -60,8 +69,6 @@ export function setupEmojiUI(internalEditor: LexicalEditor) {
             btn.className = 'emoji-item';
             btn.onclick = () => {
                 EmojiPicker.insertEmoji(internalEditor, emoji);
-                // Don't close immediately if holding shift or double click?
-                // Standard behavior: close.
                 emojiDialog!.classList.add('hidden');
             };
             emojiGrid!.appendChild(btn);
@@ -77,15 +84,14 @@ export function setupEmojiUI(internalEditor: LexicalEditor) {
             tabs.forEach(t => t.classList.remove('active'));
             tab.classList.add('active');
             currentCategory = (tab as HTMLElement).dataset.category || 'all';
-            renderEmojis();
-            searchInput.value = ''; // Reset search on tab switch
+            renderEmojis(searchInput.value);
+            searchInput.value = '';
         });
     });
 
-    // Search Handler (Simple placeholder logic for now)
+    // Search Handler
     searchInput?.addEventListener('input', () => {
-        // If we had metadata, we would filter here.
-        // For now, let's just show everything or maybe filter by exact char match?
+        renderEmojis(searchInput.value);
     });
 
     // Close Handler
@@ -97,9 +103,9 @@ export function setupEmojiUI(internalEditor: LexicalEditor) {
     document.getElementById('emoji-btn')?.addEventListener('click', (e) => {
         e.stopPropagation();
         emojiDialog.classList.toggle('hidden');
-        renderEmojis(); // Reset to initial state or separate?
+        renderEmojis();
 
-        // Position it near the button?
+        // Position it near the button
         const btn = document.getElementById('emoji-btn');
         if (btn) {
             const rect = btn.getBoundingClientRect();

@@ -44,10 +44,13 @@ export const TableOfContentsPlugin = {
                 // Scan for headings and TOC nodes
                 children.forEach(node => {
                     if ($isHeadingNode(node)) {
+                        const tag = node.getTag();
+                        const level = parseInt(tag.slice(1)); // h1 -> 1, h2 -> 2, etc.
                         headings.push({
                             key: node.getKey(),
                             text: node.getTextContent(),
-                            tag: node.getTag()
+                            tag: tag,
+                            level: level
                         });
                     } else if (node instanceof TableOfContentsNode) {
                         tocNodes.push(node);
