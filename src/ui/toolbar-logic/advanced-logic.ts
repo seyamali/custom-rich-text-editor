@@ -1,20 +1,68 @@
+import { CUT_COMMAND, COPY_COMMAND, PASTE_COMMAND, $getSelection, $isRangeSelection, INDENT_CONTENT_COMMAND, OUTDENT_CONTENT_COMMAND } from 'lexical';
 import { MyUniversalEditor } from '../../core/engine';
 import { insertImage } from '../../plugins/media/images';
-import { insertTable, tableHandlers } from '../../plugins/layout/tables';
+import { tableHandlers } from '../../plugins/layout/tables';
 import { MediaEmbedPlugin } from '../../plugins/advanced/media-embed';
 import { INSERT_CODE_BLOCK_COMMAND } from '../../plugins/advanced/code-blocks';
 import { INSERT_PLACEHOLDER_COMMAND } from '../../plugins/advanced/placeholder';
-import { toggleTracking } from '../../plugins/collaboration/track-changes';
+import { TOGGLE_TRACK_CHANGES_COMMAND } from '../../plugins/collaboration/track-changes';
 import { SourceViewPlugin } from '../../plugins/advanced/source-view';
 import { FormatPainter } from '../../plugins/productivity/format-painter';
 import { CaseChange } from '../../plugins/productivity/case-change';
+import { REMOVE_FORMATTING_COMMAND } from '../../plugins/essentials/clipboard';
 
 export function setupAdvancedLogic(editor: MyUniversalEditor, internalEditor: any) {
     let isSourceMode = false;
+    const internal = editor.getInternalEditor();
+
+    // Clipboard & Generic Formatting Group
+    document.getElementById('cut-btn')?.addEventListener('click', () => {
+        internal.dispatchCommand(CUT_COMMAND, null);
+    });
+    document.getElementById('copy-btn')?.addEventListener('click', () => {
+        internal.dispatchCommand(COPY_COMMAND, null);
+    });
+    document.getElementById('paste-btn')?.addEventListener('click', async () => {
+        try {
+            const dataTransfer = new DataTransfer();
+            const text = await navigator.clipboard.readText();
+            dataTransfer.setData('text/plain', text);
+            const event = new ClipboardEvent('paste', { clipboardData: dataTransfer });
+            internal.dispatchCommand(PASTE_COMMAND, event);
+        } catch (e) {
+            console.error("Paste failed: Browser security blocked clipboard access from button.", e);
+            alert("Please use Ctrl+V to paste.");
+        }
+    });
+    document.getElementById('paste-plain-btn')?.addEventListener('click', async () => {
+        try {
+            const text = await navigator.clipboard.readText();
+            internal.update(() => {
+                const selection = $getSelection();
+                if ($isRangeSelection(selection)) {
+                    selection.insertRawText(text);
+                }
+            });
+        } catch (e) {
+            console.error("Paste Plain failed.", e);
+            alert("Please use Ctrl+Shift+V to paste as plain text.");
+        }
+    });
+
+    document.getElementById('clear-btn')?.addEventListener('click', () => {
+        internal.dispatchCommand(REMOVE_FORMATTING_COMMAND, undefined);
+    });
+
+    // Indentation Group
+    document.getElementById('indent-btn')?.addEventListener('click', () => {
+        internal.dispatchCommand(INDENT_CONTENT_COMMAND, undefined);
+    });
+    document.getElementById('outdent-btn')?.addEventListener('click', () => {
+        internal.dispatchCommand(OUTDENT_CONTENT_COMMAND, undefined);
+    });
 
     // Media & Tables
     document.getElementById('image-btn')?.addEventListener('click', () => insertImage());
-    document.getElementById('table-btn')?.addEventListener('click', () => insertTable(editor));
     document.getElementById('add-row-btn')?.addEventListener('click', () => tableHandlers.insertRow(editor));
     document.getElementById('add-col-btn')?.addEventListener('click', () => tableHandlers.insertColumn(editor));
     document.getElementById('del-row-btn')?.addEventListener('click', () => tableHandlers.deleteRow(editor));
@@ -48,12 +96,19 @@ export function setupAdvancedLogic(editor: MyUniversalEditor, internalEditor: an
     });
 
     document.getElementById('code-block-btn')?.addEventListener('click', () => {
-        editor.getInternalEditor().dispatchCommand(INSERT_CODE_BLOCK_COMMAND, undefined);
+        editor.getInternalEditor().dispatchCommand(INSERT_CODE_BLOCK_COMMAND, null);
     });
 
-    document.getElementById('track-changes-btn')?.addEventListener('click', (e) => {
-        const isTracking = toggleTracking();
-        const btn = e.target as HTMLButtonElement;
+    document.getElementById('track-changes-btn')?.addEventListener('click', () => {
+        internal.dispatchCommand(TOGGLE_TRACK_CHANGES_COMMAND, undefined);
+    });
+
+    // Listen for state changes to update button UI
+    window.addEventListener('track-changes-toggled', (e: any) => {
+        const btn = document.getElementById('track-changes-btn') as HTMLButtonElement;
+        if (!btn) return;
+
+        const isTracking = e.detail;
         if (isTracking) {
             btn.innerText = "👁️ Track Changes: ON";
             btn.classList.remove('off');
@@ -66,8 +121,12 @@ export function setupAdvancedLogic(editor: MyUniversalEditor, internalEditor: an
     });
 
     // Format Painter
-    document.getElementById('format-painter-btn')?.addEventListener('click', () => {
-        FormatPainter.copyFormat(internalEditor);
+    const paintBtn = document.getElementById('format-painter-btn');
+    paintBtn?.addEventListener('click', () => {
+        FormatPainter.copyFormat(internalEditor); // Single click = normal paint
+    });
+    paintBtn?.addEventListener('dblclick', () => {
+        FormatPainter.copyFormat(internalEditor, true); // Double click = lock paint
     });
 
     // Case Change
@@ -80,20 +139,58 @@ export function setupAdvancedLogic(editor: MyUniversalEditor, internalEditor: an
         const canvas = document.getElementById('editor-canvas') as HTMLElement;
         const sourceArea = document.getElementById('source-editor') as HTMLTextAreaElement;
         const btn = document.getElementById('source-toggle-btn') as HTMLButtonElement;
+        const toolbar = document.getElementById('toolbar') as HTMLElement;
 
         if (!isSourceMode) {
+            // Switch to Source
             const html = SourceViewPlugin.getHtml(editor);
             sourceArea.value = html;
+
             canvas.style.display = 'none';
             sourceArea.style.display = 'block';
-            btn.innerText = '✔ Apply Changes';
+            sourceArea.focus();
+
+            btn.innerHTML = '✔ Apply Changes';
+            btn.classList.add('active');
+            toolbar.classList.add('source-mode-active');
+
+            // Disable most toolbar buttons
+            toolbar.querySelectorAll('button:not(#source-toggle-btn)').forEach(child => {
+                (child as HTMLButtonElement).disabled = true;
+            });
+            toolbar.querySelectorAll('select').forEach(child => {
+                (child as HTMLSelectElement).disabled = true;
+            });
+
             isSourceMode = true;
         } else {
-            SourceViewPlugin.setHtml(editor, sourceArea.value);
-            canvas.style.display = 'block';
-            sourceArea.style.display = 'none';
-            btn.innerText = 'HTML Source';
-            isSourceMode = false;
+            // Switch back to Visual
+            try {
+                SourceViewPlugin.setHtml(editor, sourceArea.value);
+
+                canvas.style.display = 'block';
+                sourceArea.style.display = 'none';
+
+                btn.innerHTML = 'HTML Source';
+                btn.classList.remove('active');
+                toolbar.classList.remove('source-mode-active');
+
+                // Re-enable toolbar
+                toolbar.querySelectorAll('button').forEach(child => {
+                    (child as HTMLButtonElement).disabled = false;
+                });
+                toolbar.querySelectorAll('select').forEach(child => {
+                    (child as HTMLSelectElement).disabled = false;
+                });
+
+                isSourceMode = false;
+
+                // Focus editor back
+                editor.getInternalEditor().focus();
+            } catch (error) {
+                console.error("HTML Source Apply Error:", error);
+                alert("Failed to apply HTML changes. Please check for invalid tags.");
+            }
         }
     });
 }

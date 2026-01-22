@@ -1,31 +1,265 @@
 import { $generateHtmlFromNodes, $generateNodesFromDOM } from '@lexical/html';
 import { $getRoot } from 'lexical';
 
-
 export const SourceViewPlugin = {
+    // Storage for the page template (head, doctype) to ensure    // State for Source Fidelity
+    _fullDocTemplate: null as { head: string; docType: string } | null,
+    _originalHtml: null as string | null,
+    _isDirty: false,
+    _listener: null as (() => void) | null,
+
     /**
-     * Converts the current editor state into a formatted HTML string.
+     * Get HTML from Editor with literal fidelity.
      */
     getHtml: (editor: any): string => {
+        // Same-to-Same Fidelity check:
+        // If the user hasn't touched the editor, return the EXACT source they pasted.
+        if (!SourceViewPlugin._isDirty && SourceViewPlugin._originalHtml) {
+            return SourceViewPlugin._originalHtml;
+        }
+
         let html = '';
         editor.getInternalEditor().update(() => {
             html = $generateHtmlFromNodes(editor.getInternalEditor());
         });
+
+        // Aggressive Clean - This is the Same-to-Same engine
+        html = SourceViewPlugin.cleanHtml(html);
+
+        // 3. Re-wrap in the original document structure if it was a full page
+        if (SourceViewPlugin._fullDocTemplate) {
+            const { docType, head } = SourceViewPlugin._fullDocTemplate;
+            return `${docType}\n<html>\n<head>\n${head}\n</head>\n<body>\n${html}\n</body>\n</html>`;
+        }
+
         return html;
     },
 
     /**
-     * Replaces the entire editor content with new nodes parsed from an HTML string.
+     * Professional HTML Beautifier
+     * Adds line breaks and indentation to a dense HTML string.
+     */
+    beautifyHTML: (html: string): string => {
+        let formatted = '';
+        let indent = '';
+        const tab = '    '; // 4 spaces
+
+        // Tag families that should NEVER be split across lines internally
+        const protectedTags = /^(title|h1|h2|h3|h4|h5|h6|a|span|b|strong|i|em|u|button|label|logo)/i;
+
+        // Split by tags
+        const nodes = html.split(/(<[^>!]+>)/g);
+
+        nodes.forEach(node => {
+            if (node.match(/^<\/\w/)) { // Closing tag
+                const tagName = node.match(/^<\/(\w+)/)?.[1] || '';
+                if (!protectedTags.test(tagName)) {
+                    indent = indent.substring(tab.length);
+                    formatted += '\n' + indent + node;
+                } else {
+                    formatted += node;
+                }
+            } else if (node.match(/^<\w[^>]*[^\/]>$/)) { // Opening tag
+                const tagName = node.match(/^<(\w+)/)?.[1] || '';
+                const isProtected = protectedTags.test(tagName);
+
+                if (!isProtected) {
+                    formatted += '\n' + indent + node;
+                    if (!/^(br|hr|img|input|meta|link)/i.test(tagName)) {
+                        indent += tab;
+                    }
+                } else {
+                    // Start on new line but don't indent children
+                    formatted += '\n' + indent + node;
+                }
+            } else if (node.match(/^<\w[^>]*\/>$/)) { // Self-closing
+                formatted += '\n' + indent + node;
+            } else { // Text content
+                const text = node.trim();
+                if (text) {
+                    formatted += text;
+                }
+            }
+        });
+
+        return formatted.trim().replace(/\n\s*\n/g, '\n'); // Remove double newlines
+    },
+
+    /**
+     * Replaces the editor content and injects styles into the document head for "Same-to-Same" design.
      */
     setHtml: (editor: any, html: string) => {
+        // Cache original source
+        SourceViewPlugin._originalHtml = html;
+        SourceViewPlugin._isDirty = false;
+
+        // Cleanup old listener if exists
+        if (SourceViewPlugin._listener) {
+            SourceViewPlugin._listener();
+            SourceViewPlugin._listener = null;
+        }
+
+        // Register new dirty check listener
+        // We use a timeout to let the initial setHtml update pass without triggering dirty
+        setTimeout(() => {
+            SourceViewPlugin._listener = editor.getInternalEditor().registerUpdateListener(({ dirtyElements, dirtyLeaves, tags }: any) => {
+                // If the update was user-initiated (not history merge or internal) and changes content
+                if (tags.has('history-merge') || tags.has('paste') || tags.has('user-interaction')) {
+                    SourceViewPlugin._isDirty = true;
+                } else if (dirtyElements.size > 0 || dirtyLeaves.size > 0) {
+                    // Any content mutation marks it as dirty
+                    SourceViewPlugin._isDirty = true;
+                }
+            });
+        }, 200);
+
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+
+        // 1. Clean up previous global styles injected by the editor
+        document.querySelectorAll('[data-editor-asset="true"]').forEach(el => el.remove());
+
+        // 2. Detect and Inject Assets (Style/Link tags) into the real Document Head
+        const hasHtmlTag = html.toLowerCase().includes('<html');
+        if (hasHtmlTag) {
+            SourceViewPlugin._fullDocTemplate = {
+                docType: html.match(/^<!DOCTYPE [^>]+>/i)?.[0] || '<!DOCTYPE html>',
+                head: doc.head.innerHTML
+            };
+
+            const editorElement = editor.getInternalEditor().getRootElement();
+
+            // Inject styles/links/scripts into real head with "Body Proxying"
+            const assets = doc.querySelectorAll('style, link[rel="stylesheet"], script');
+            assets.forEach(asset => {
+                let node: HTMLElement;
+                if (asset.tagName === 'STYLE') {
+                    node = document.createElement('style');
+                    // SAME-TO-SAME FIX: Proxy ALL global selectors to target the editor container
+                    let css = asset.innerHTML;
+
+                    // 1. Proxy root/body/html to the container itself
+                    css = css.replace(/(?:body|html|:root)\s*\{/gi, '.editor-container {');
+                    css = css.replace(/(?:body|html|:root),\s*/gi, '.editor-container, ');
+
+                    // 2. Proxy the universal selector (*) to be scoped INSIDE the container
+                    // Converting "* {" to ".editor-container * {" ensures resets apply to children
+                    css = css.replace(/\*\s*\{/g, '.editor-container * {');
+
+                    node.innerHTML = css;
+                } else if (asset.tagName === 'SCRIPT') {
+                    node = document.createElement('script');
+                    if ((asset as HTMLScriptElement).src) {
+                        (node as HTMLScriptElement).src = (asset as HTMLScriptElement).src;
+                    } else {
+                        node.innerHTML = asset.innerHTML;
+                    }
+                } else {
+                    node = asset.cloneNode(true) as HTMLElement;
+                }
+                node.setAttribute('data-editor-asset', 'true');
+                document.head.appendChild(node);
+            });
+
+            // Mirror all body classes and inline styles to the editor root
+            if (editorElement) {
+                const bodyClasses = Array.from(doc.body.classList);
+                editorElement.className = `editor-container ${bodyClasses.join(' ')}`;
+                if (doc.body.getAttribute('style')) {
+                    editorElement.setAttribute('style', doc.body.getAttribute('style') || '');
+                }
+                // CRITICAL FIX: Unlock the background so the proxied CSS can take over.
+                // We remove the inline background-color entirely.
+                // This allows rules like ".editor-container { background-color: var(--dark); }" to win.
+                editorElement.style.removeProperty('background-color');
+
+                // CRITICAL FIX: Unlock the text color as well.
+                // This ensures "color: #fff" from the proxy CSS (via body styles) works
+                editorElement.style.removeProperty('color');
+            }
+        } else {
+            SourceViewPlugin._fullDocTemplate = null;
+            const editorElement = editor.getInternalEditor().getRootElement();
+            if (editorElement) {
+                editorElement.className = 'editor-container';
+                editorElement.style.backgroundColor = '';
+                editorElement.style.color = '';
+            }
+        }
+
+        // PERMISSIVE CLEANING: Allow scripts so interactive logic (scroll reveal, etc) works
+        const sanitizedHtml = SourceViewPlugin.sanitizeHTML(doc.body.innerHTML);
+
         editor.getInternalEditor().update(() => {
             const parser = new DOMParser();
-            const dom = parser.parseFromString(html, 'text/html');
+            const dom = parser.parseFromString(sanitizedHtml, 'text/html');
             const nodes = $generateNodesFromDOM(editor.getInternalEditor(), dom);
 
             const root = $getRoot();
-            root.clear(); // Remove everything current
-            root.append(...nodes); // Add the new HTML-based nodes
+            root.clear();
+            root.append(...nodes);
         });
+    },
+
+    /**
+     * Pure HTML post-processor to remove ALL Lexical pollution.
+     * This is the "Same-to-Same" guardian.
+     */
+    cleanHtml: (html: string): string => {
+        // 1. Remove ALL internal data attributes injected by Lexical or our custom nodes
+        html = html.replace(/ data-[a-zA-Z0-9-]+="[^"]*"/g, '');
+
+        // 2. Remove Lexical's "white-space: pre-wrap" spans and styling
+        html = html.replace(/<span style="white-space: pre-wrap;">(.*?)<\/span>/g, '$1');
+        html = html.replace(/ style="white-space: pre-wrap;"/g, '');
+
+        // 3. Remove Theme Classes and EMPTY classes (Fixes p class="")
+        html = html.replace(/ class="editor-[^"]+"/g, '');
+        html = html.replace(/ class=""/g, '');
+
+        // 4. Restore boolean attributes (required="" -> required)
+        html = html.replace(/ (required|checked|disabled|readonly|multiple|selected)=""/g, ' $1');
+
+        // 5. Normalization Fix: Remove extra paragraphs that wrap structural elements
+        html = html.replace(/<p><(div|header|footer|nav|section|article|aside|form)/gi, '<$1');
+        html = html.replace(/<\/(div|header|footer|nav|section|article|aside|form)><\/p>/gi, '</$1>');
+
+        // 6. Final cleanup: Remove empty styles and empty spans
+        html = html.replace(/ style=""/g, '');
+        html = html.replace(/<span><\/span>/g, '');
+
+        // 7. Fix internal encoding (e.g. &amp; in URLs) - Restore raw & for fidelity
+        html = html.replace(/&amp;/g, '&');
+
+        // 8. Fix Newline artifacts in Title/Header tags (from beautifier)
+        html = html.replace(/<(title|h1|h2|h3|h4|h5|h6)>\s*(.*?)\s*<\/\1>/gi, '<$1>$2</$1>');
+
+        return html;
+    },
+
+    /**
+     * Permissive sanitizer to keep layout and attributes intact.
+     */
+    sanitizeHTML: (html: string): string => {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+
+        const sanitizeNode = (node: Node) => {
+            if (node.nodeType === Node.ELEMENT_NODE) {
+                const el = node as HTMLElement;
+                if (el.tagName === 'SCRIPT') {
+                    // Remove scripts from body to avoid seeing code in Visual editor
+                    el.parentNode?.removeChild(el);
+                    return;
+                }
+                // Keep all attributes except event handlers
+                Array.from(el.attributes).forEach(attr => {
+                    if (attr.name.toLowerCase().startsWith('on')) el.removeAttribute(attr.name);
+                });
+                el.childNodes.forEach(child => sanitizeNode(child));
+            }
+        };
+        doc.body.childNodes.forEach(child => sanitizeNode(child));
+        return doc.body.innerHTML;
     }
 };

@@ -1,4 +1,4 @@
-import { $insertNodes, COMMAND_PRIORITY_LOW, PASTE_COMMAND, DROP_COMMAND, type LexicalEditor } from 'lexical';
+import { $insertNodes, COMMAND_PRIORITY_LOW, PASTE_COMMAND, DROP_COMMAND, type LexicalEditor, $createNodeSelection, $setSelection } from 'lexical';
 import { $createImageNode } from './image-node';
 import { EditorSDK } from '../../core/sdk';
 import type { EditorPlugin } from '../../core/registry';
@@ -93,6 +93,11 @@ async function handleFileUpload(editor: LexicalEditor, file: File) {
             editor.update(() => {
                 const imageNode = $createImageNode(response.url, response.filename || file.name, 500);
                 $insertNodes([imageNode]);
+
+                // Auto-select the image so handles are visible immediately
+                const nodeSelection = $createNodeSelection();
+                nodeSelection.add(imageNode.getKey());
+                $setSelection(nodeSelection);
             });
         }, 50);
     } catch (error) {

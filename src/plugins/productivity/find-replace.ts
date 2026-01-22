@@ -8,82 +8,136 @@ import {
     type LexicalEditor
 } from 'lexical';
 
+export interface SearchOptions {
+    caseSensitive: boolean;
+    wholeWord: boolean;
+    isRegex: boolean;
+}
+
 export const FindReplace = {
     /**
-     * Finds the next occurrence of text after the current selection.
-     * Circles back to the beginning if end is reached.
+     * Finds the next match relative to current cursor.
      */
-    findNext: (editor: LexicalEditor, searchText: string) => {
-        if (!searchText) return;
-
-        editor.update(() => {
-            const root = $getRoot();
-            const textNodes = root.getAllTextNodes();
-            let matchFound = false;
-
-            // 1. Get current selection pivot to start searching from
-            const selection = $getSelection();
-            let startNodeIndex = 0;
-            let startOffset = 0;
-
-            if ($isRangeSelection(selection)) {
-                // Approximate starting point based on anchor
-                const anchor = selection.anchor;
-                const nodeKey = anchor.key;
-                startNodeIndex = textNodes.findIndex(n => n.getKey() === nodeKey);
-                if (startNodeIndex === -1) startNodeIndex = 0;
-                startOffset = anchor.offset + 1; // Start searching AFTER the current cursor
-            }
-
-            // 2. Search forward from current position
-            for (let i = startNodeIndex; i < textNodes.length; i++) {
-                const node = textNodes[i];
-                const textContent = node.getTextContent();
-                // Determine where to start searching in this node
-                const searchFrom = (i === startNodeIndex) ? startOffset : 0;
-
-                const index = textContent.toLowerCase().indexOf(searchText.toLowerCase(), searchFrom);
-
-                if (index !== -1) {
-                    FindReplace.selectMatch(editor, node, index, searchText.length);
-                    matchFound = true;
-                    return; // Stop after finding one
-                }
-            }
-
-            // 3. Loop back to beginning if not found yet (Circle back)
-            if (!matchFound) {
-                for (let i = 0; i <= startNodeIndex; i++) {
-                    const node = textNodes[i];
-                    const textContent = node.getTextContent();
-                    // Stop searching at the original start point to prevent infinite loop
-                    const searchLimit = (i === startNodeIndex) ? startOffset : textContent.length;
-
-                    // We need to slice or check index manually to ensure we don't cross the "searchFrom" barrier of the first loop effectively
-                    // But simpler: just search the whole node. If it's the startNode, we only search up to startOffset.
-                    // Actually, indexOf doesn't support "end index". We check result.
-
-                    const index = textContent.toLowerCase().indexOf(searchText.toLowerCase());
-                    if (index !== -1 && (i !== startNodeIndex || index < searchLimit)) {
-                        FindReplace.selectMatch(editor, node, index, searchText.length);
-                        return;
-                    }
-                }
-            }
-
-            // alert('No matches found.'); // Optional feedback
-        });
+    findNext: (editor: LexicalEditor, searchText: string, options: SearchOptions) => {
+        FindReplace._find(editor, searchText, options, false);
     },
 
     /**
-     * Helper to highlight/select the text found.
+     * Finds the previous match (search backwards).
      */
+    findPrevious: (editor: LexicalEditor, searchText: string, options: SearchOptions) => {
+        FindReplace._find(editor, searchText, options, true);
+    },
+
+    /**
+     * Internal search logic using Regex for flexibility
+     */
+    _find: (editor: LexicalEditor, searchText: string, options: SearchOptions, backwards: boolean) => {
+        if (!searchText) return;
+
+        editor.update(() => {
+            const regex = createRegex(searchText, options);
+            if (!regex) return; // Invalid regex
+
+            const root = $getRoot();
+            const textNodes = root.getAllTextNodes();
+            const matches: { node: TextNode, index: number, length: number }[] = [];
+
+            // 1. Gather all matches in the document order
+            textNodes.forEach(node => {
+                const text = node.getTextContent();
+                let match;
+                // We need to reset lastIndex because we reuse regex if global
+                // We create a fresh regex in createRegex each time, so initial lastIndex is 0
+                // For 'g' regex, exec loops through.
+
+                while ((match = regex.exec(text)) !== null) {
+                    matches.push({
+                        node,
+                        index: match.index,
+                        length: match[0].length
+                    });
+
+                    // Prevent infinite loop for zero-length matches
+                    if (match.index === regex.lastIndex) {
+                        regex.lastIndex++;
+                    }
+                }
+            });
+
+            if (matches.length === 0) {
+                updateInfo(`No matches for "${searchText}"`);
+                return;
+            }
+
+            // 2. Find closest match to current selection
+            const selection = $getSelection();
+            let currentIndex = -1;
+
+            if ($isRangeSelection(selection) && selection.isCollapsed()) {
+                const anchorNode = selection.anchor.getNode();
+                const currentOffset = selection.anchor.offset;
+
+                if (backwards) {
+                    // Find last match strictly BEFORE cursor
+                    for (let i = matches.length - 1; i >= 0; i--) {
+                        const m = matches[i];
+                        const isSameNode = m.node.getKey() === anchorNode.getKey();
+                        let isStrictlyBefore = false;
+
+                        if (isSameNode) {
+                            isStrictlyBefore = m.index < currentOffset;
+                        } else {
+                            isStrictlyBefore = m.node.isBefore(anchorNode);
+                        }
+
+                        if (isStrictlyBefore) {
+                            currentIndex = i;
+                            break;
+                        }
+                    }
+                    if (currentIndex === -1) currentIndex = matches.length - 1;
+
+                } else {
+                    // Find first match strictly AFTER (or at) cursor
+                    for (let i = 0; i < matches.length; i++) {
+                        const m = matches[i];
+                        const isSameNode = m.node.getKey() === anchorNode.getKey();
+                        let isAfter = false;
+
+                        if (isSameNode) {
+                            isAfter = m.index >= currentOffset;
+                        } else {
+                            // If anchor is before m.node, then m.node is after anchor
+                            isAfter = anchorNode.isBefore(m.node);
+                        }
+
+                        if (isAfter) {
+                            currentIndex = i;
+                            break;
+                        }
+                    }
+                    if (currentIndex === -1) currentIndex = 0;
+                }
+            } else {
+                // No selection or not collapsed, just pick first or last
+                currentIndex = backwards ? matches.length - 1 : 0;
+            }
+
+            // 3. Select the match
+            const match = matches[currentIndex];
+            if (match) {
+                FindReplace.selectMatch(editor, match.node, match.index, match.length);
+                updateInfo(`${currentIndex + 1} / ${matches.length}`);
+            }
+        });
+    },
+
     selectMatch: (editor: LexicalEditor, node: TextNode, index: number, length: number) => {
         const selection = $createRangeSelection();
         selection.setTextNodeRange(node, index, node, index + length);
         $setSelection(selection);
 
-        // Scroll found node into view
         const element = editor.getElementByKey(node.getKey());
         if (element) {
             element.scrollIntoView({ block: 'center', behavior: 'smooth' });
@@ -91,49 +145,74 @@ export const FindReplace = {
     },
 
     /**
-     * Replaces the currently selected text IF it matches the search query,
-     * then finds the next match.
+     * Replaces, then moves to next.
      */
-    replace: (editor: LexicalEditor, searchText: string, replaceText: string) => {
+    replace: (editor: LexicalEditor, searchText: string, replaceText: string, options: SearchOptions) => {
         editor.update(() => {
             const selection = $getSelection();
             if ($isRangeSelection(selection)) {
+                // Determine if selection matches the search query
                 const text = selection.getTextContent();
-                // Check if current selection matches search text (case insensitive)
-                if (text.toLowerCase() === searchText.toLowerCase()) {
+                const regex = createRegex(searchText, options);
+
+                // Usually if the user clicks Replace, they intend to replace the currently selected match
+                // We should verify it matches though.
+                if (regex && regex.test(text)) {
                     selection.insertText(replaceText);
                 }
             }
         });
-        // Find next immediately after
-        setTimeout(() => FindReplace.findNext(editor, searchText), 0);
+
+        // Find next match immediately
+        setTimeout(() => FindReplace.findNext(editor, searchText, options), 50);
     },
 
-    /**
-     * Replaces ALL occurrences in the document.
-     */
-    replaceAll: (editor: LexicalEditor, searchText: string, replaceText: string) => {
+    replaceAll: (editor: LexicalEditor, searchText: string, replaceText: string, options: SearchOptions) => {
         editor.update(() => {
+            const regex = createRegex(searchText, options);
+            if (!regex) return;
+
             const root = $getRoot();
             const textNodes = root.getAllTextNodes();
             let count = 0;
 
             textNodes.forEach(node => {
                 const text = node.getTextContent();
-                const regex = new RegExp(escapeRegExp(searchText), 'gi'); // Global, Case-insensitive
-
                 if (regex.test(text)) {
+                    // Reset lastIndex for global regex
+                    regex.lastIndex = 0;
+
                     const newText = text.replace(regex, replaceText);
-                    node.setTextContent(newText);
-                    count++;
+                    if (newText !== text) {
+                        node.setTextContent(newText);
+                        count++;
+                    }
                 }
+                regex.lastIndex = 0;
             });
-            console.log(`Replaced ${count} occurrences.`);
+            updateInfo(`Replaced ${count} occurrence(s).`);
         });
     }
 };
 
-// Helper for regex safety
+function createRegex(text: string, options: SearchOptions): RegExp | null {
+    try {
+        let pattern = options.isRegex ? text : escapeRegExp(text);
+        if (options.wholeWord) {
+            pattern = `\\b${pattern}\\b`;
+        }
+        return new RegExp(pattern, options.caseSensitive ? 'g' : 'gi');
+    } catch (e) {
+        updateInfo("Invalid Regex");
+        return null;
+    }
+}
+
 function escapeRegExp(string: string) {
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function updateInfo(msg: string) {
+    const el = document.getElementById('fr-info-text');
+    if (el) el.innerText = msg;
 }

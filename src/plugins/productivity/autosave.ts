@@ -2,28 +2,58 @@ import type { EditorPlugin } from '../../core/registry';
 import { type LexicalEditor, type EditorState } from 'lexical';
 import { EditorSDK } from '../../core/sdk';
 
+// Commands from other plugins (optional dependency)
+// We assume SAVE_REVISION_COMMAND might exist if the plugin is loaded
 export const AUTOSAVE_KEY = 'editor_autosave_state';
-const DELAY = 2000; // 2 seconds
+const DEBOUNCE_DELAY = 1000; // 1 second debounce for Draft save
+const REVISION_INTERVAL = 30000; // 30 seconds for specific Revision snapshot
+
+interface AutosaveConfig {
+    interval?: number;     // For full revisions
+    enabled?: boolean;
+}
 
 export const AutosavePlugin: EditorPlugin = {
     name: 'autosave',
     init: (sdk: EditorSDK) => {
         const editor = sdk.getLexicalEditor();
         let timeoutId: number | undefined;
+        let lastRevisionTime = Date.now();
+
+        // Config defaults
+        const config: AutosaveConfig = {
+            interval: REVISION_INTERVAL,
+            enabled: true
+        };
+
+        if (!config.enabled) return;
 
         // Listen for updates
-        return editor.registerUpdateListener(({ editorState }) => {
-            // Only save if content changed (clean listeners might fire for selection changes too, but update listeners usually imply content or potential serializable change)
-            // Actually registerUpdateListener fires on selection too.
-            // We can check if `dirtyElements` or `dirtyLeaves` is empty, but serialization is cheap enough for a debounce.
+        return editor.registerUpdateListener(({ editorState, dirtyElements, dirtyLeaves }) => {
+            if (dirtyElements.size === 0 && dirtyLeaves.size === 0) return;
 
+            // 1. UI Feedback: Saving...
+            updateStatus('Saving...', 'saving');
             clearTimeout(timeoutId);
-            updateStatus('Writing...');
 
+            // 2. Debounce Draft Save (Crash Recovery)
             // @ts-ignore
             timeoutId = setTimeout(() => {
                 saveState(editorState);
-            }, DELAY);
+
+                // 3. Time-based Revision Snapshot
+                const now = Date.now();
+                if (now - lastRevisionTime > (config.interval || REVISION_INTERVAL)) {
+                    // Try to trigger revision history save if available
+                    sdk.dispatchCommand('SAVE_REVISION' as any, {
+                        name: 'Autosave',
+                        isAuto: true
+                    });
+                    lastRevisionTime = now;
+                    console.log("[Autosave] Triggered Revision Snapshot");
+                }
+
+            }, DEBOUNCE_DELAY);
         });
     }
 };
@@ -31,22 +61,23 @@ export const AutosavePlugin: EditorPlugin = {
 function saveState(editorState: EditorState) {
     const json = JSON.stringify(editorState.toJSON());
     localStorage.setItem(AUTOSAVE_KEY, json);
-    updateStatus('Saved ✔');
+    updateStatus('All changes saved', 'saved');
 }
 
-function updateStatus(msg: string) {
+function updateStatus(msg: string, type: 'saving' | 'saved' | 'error') {
     const statusEl = document.getElementById('autosave-status');
     if (statusEl) {
         statusEl.innerText = msg;
-        statusEl.style.opacity = '1';
+        statusEl.className = `autosave-status status-${type}`;
 
-        if (msg.includes('Saved')) {
-            // Fade out "Saved" after a bit
+        // If saved, keep it for a while then fade to subtle indicator or just stay
+        if (type === 'saved') {
             setTimeout(() => {
                 if (statusEl.innerText === msg) {
-                    statusEl.style.opacity = '0.5';
+                    statusEl.innerText = 'Saved'; // Shorten it
+                    statusEl.classList.add('faded');
                 }
-            }, 1000);
+            }, 3000);
         }
     }
 }
@@ -62,8 +93,10 @@ export function loadAutosavedState(editor: LexicalEditor) {
             const state = editor.parseEditorState(saved);
             editor.setEditorState(state);
             console.log("Autosave restored.");
+            updateStatus('Restored from draft', 'saved');
         } catch (e) {
             console.error("Failed to restore autosave:", e);
+            updateStatus('Failed to restore', 'error');
         }
     }
 }

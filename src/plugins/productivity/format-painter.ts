@@ -28,8 +28,11 @@ export const FormatPainterPlugin: EditorPlugin = {
                                 selection.format = copiedFormat!;
                             }
                         });
-                        // Turn off painting after one use (single-shot)
-                        togglePainting(false);
+
+                        // Turn off painting unless locked
+                        if (!isLockedMode) {
+                            togglePainting(false);
+                        }
                     }, 50);
                 }
                 return false;
@@ -43,13 +46,13 @@ export const FormatPainter = {
     /**
      * Copies the format of the current selection.
      */
-    copyFormat: (editor: LexicalEditor) => {
+    copyFormat: (editor: LexicalEditor, isLocked = false) => {
         editor.getEditorState().read(() => {
             const selection = $getSelection();
             if ($isRangeSelection(selection)) {
                 copiedFormat = selection.format;
                 console.log("Format copied:", copiedFormat);
-                togglePainting(true);
+                togglePainting(true, isLocked);
             } else {
                 alert("Select some text to copy its format first.");
             }
@@ -59,18 +62,24 @@ export const FormatPainter = {
     isPainting: () => isPainting
 };
 
-function togglePainting(active: boolean) {
+let isLockedMode = false;
+
+function togglePainting(active: boolean, locked = false) {
     isPainting = active;
+    isLockedMode = active && locked;
+
     const btn = document.getElementById('format-painter-btn');
     if (btn) {
         if (active) {
             btn.classList.add('active');
-            btn.style.backgroundColor = '#ffc107'; // Yellow to indicate active tool
-            document.body.style.cursor = 'copy'; // Change cursor
+            if (locked) btn.classList.add('locked');
+            btn.style.backgroundColor = locked ? '#f59e0b' : '#ffc107'; // Darker amber if locked
+            document.body.classList.add('format-painter-active');
         } else {
-            btn.classList.remove('active');
+            btn.classList.remove('active', 'locked');
             btn.style.backgroundColor = '';
-            document.body.style.cursor = 'default';
+            document.body.classList.remove('format-painter-active');
+            isLockedMode = false;
         }
     }
 }

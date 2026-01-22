@@ -1,11 +1,8 @@
-import { $insertNodes } from 'lexical';
+import { $insertNodes, $createNodeSelection, $setSelection } from 'lexical';
 import { $createImageNode } from './image-node';
 import { UploadManager } from '../upload/upload-manager';
 
 export function setupUnifiedImageModal(editor: any) {
-    console.log('setupUnifiedImageModal called!');
-    console.log('Editor:', editor);
-
     // Create modal HTML
     const modalHTML = `
         <div id="unified-image-modal" class="unified-image-modal hidden">
@@ -84,21 +81,12 @@ export function setupUnifiedImageModal(editor: any) {
 
     // Inject modal into DOM
     const wrapper = document.getElementById('editor-wrapper');
-    console.log('Editor wrapper:', wrapper);
-
     if (wrapper && !document.getElementById('unified-image-modal')) {
-        console.log('Injecting modal HTML...');
         wrapper.insertAdjacentHTML('beforeend', modalHTML);
-        console.log('Modal HTML injected!');
-    } else {
-        console.log('Wrapper not found or modal already exists');
     }
 
     const modal = document.getElementById('unified-image-modal');
-    console.log('Modal element after injection:', modal);
-
     if (!modal) {
-        console.error('Failed to create modal element!');
         return { showModal: () => console.error('Modal not initialized!') };
     }
 
@@ -124,15 +112,11 @@ export function setupUnifiedImageModal(editor: any) {
 
     // Show/Hide modal
     const showModal = () => {
-        console.log('showModal called!');
-        console.log('Modal element:', modal);
-        console.log('Modal classes before:', modal?.classList);
-
         modal.classList.remove('hidden');
         currentImage = null;
         insertBtn.disabled = true;
 
-        // Reset all tabs
+        // Reset inputs
         urlInput.value = '';
         altInput.value = '';
         urlPreview.innerHTML = '<div class="url-preview-placeholder">Enter a URL above to preview the image</div>';
@@ -143,11 +127,7 @@ export function setupUnifiedImageModal(editor: any) {
             <p>Paste an image from your clipboard</p>
         `;
 
-        // Activate first tab
         switchTab('upload');
-
-        console.log('Modal classes after:', modal?.classList);
-        console.log('Modal should be visible now!');
     };
 
     const hideModal = () => {
@@ -156,23 +136,8 @@ export function setupUnifiedImageModal(editor: any) {
 
     // Tab switching
     const switchTab = (tabName: string) => {
-        tabs.forEach(tab => {
-            if (tab.getAttribute('data-tab') === tabName) {
-                tab.classList.add('active');
-            } else {
-                tab.classList.remove('active');
-            }
-        });
-
-        tabContents.forEach(content => {
-            if (content.getAttribute('data-content') === tabName) {
-                content.classList.add('active');
-            } else {
-                content.classList.remove('active');
-            }
-        });
-
-        // Reset insert button when switching tabs
+        tabs.forEach(tab => tab.classList.toggle('active', tab.getAttribute('data-tab') === tabName));
+        tabContents.forEach(content => content.classList.toggle('active', content.getAttribute('data-content') === tabName));
         insertBtn.disabled = !currentImage;
     };
 
@@ -186,41 +151,8 @@ export function setupUnifiedImageModal(editor: any) {
     // Upload Tab Logic
     browseBtn.addEventListener('click', () => fileInput.click());
 
-    uploadZone.addEventListener('click', (e) => {
-        if (e.target === uploadZone || e.target === uploadZone.querySelector('.upload-zone-icon') ||
-            e.target === uploadZone.querySelector('h3') || e.target === uploadZone.querySelector('p')) {
-            fileInput.click();
-        }
-    });
-
-    fileInput.addEventListener('change', async () => {
+    fileInput.addEventListener('change', () => {
         const file = fileInput.files?.[0];
-        if (file && file.type.startsWith('image/')) {
-            currentImage = { file, altText: file.name };
-            insertBtn.disabled = false;
-            uploadZone.innerHTML = `
-                <div class="upload-zone-icon">✅</div>
-                <h3>${file.name}</h3>
-                <p>Ready to insert</p>
-            `;
-        }
-    });
-
-    // Drag & Drop
-    uploadZone.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        uploadZone.classList.add('drag-over');
-    });
-
-    uploadZone.addEventListener('dragleave', () => {
-        uploadZone.classList.remove('drag-over');
-    });
-
-    uploadZone.addEventListener('drop', async (e) => {
-        e.preventDefault();
-        uploadZone.classList.remove('drag-over');
-
-        const file = e.dataTransfer?.files[0];
         if (file && file.type.startsWith('image/')) {
             currentImage = { file, altText: file.name };
             insertBtn.disabled = false;
@@ -235,16 +167,12 @@ export function setupUnifiedImageModal(editor: any) {
     // URL Tab Logic
     const updateUrlPreview = () => {
         const url = urlInput.value.trim();
-
         if (!url) {
             urlPreview.innerHTML = '<div class="url-preview-placeholder">Enter a URL above to preview the image</div>';
             insertBtn.disabled = true;
-            currentImage = null;
             return;
         }
-
         urlPreview.innerHTML = '<div class="url-preview-placeholder">Loading preview...</div>';
-
         const img = new Image();
         img.onload = () => {
             urlPreview.innerHTML = '';
@@ -255,22 +183,15 @@ export function setupUnifiedImageModal(editor: any) {
         img.onerror = () => {
             urlPreview.innerHTML = '<div class="url-preview-placeholder" style="color: #dc2626;">❌ Failed to load image</div>';
             insertBtn.disabled = true;
-            currentImage = null;
         };
         img.src = url;
     };
 
     urlInput.addEventListener('input', updateUrlPreview);
-    altInput.addEventListener('input', () => {
-        if (currentImage) {
-            currentImage.altText = altInput.value || 'Image';
-        }
-    });
 
     // Paste Tab Logic
     pasteZone.addEventListener('click', () => pasteZone.focus());
     pasteZone.setAttribute('tabindex', '0');
-
     pasteZone.addEventListener('paste', (e) => {
         const items = e.clipboardData?.items;
         if (items) {
@@ -280,7 +201,6 @@ export function setupUnifiedImageModal(editor: any) {
                     if (file) {
                         currentImage = { file, altText: 'Pasted Image' };
                         insertBtn.disabled = false;
-
                         const reader = new FileReader();
                         reader.onload = (event) => {
                             pasteZone.classList.add('has-image');
@@ -301,63 +221,46 @@ export function setupUnifiedImageModal(editor: any) {
         if (!currentImage) return;
 
         try {
+            const internalEditor = editor.getInternalEditor();
+            let src = currentImage.url;
+
             if (currentImage.file) {
-                // Upload file
                 const response = await UploadManager.upload(currentImage.file);
+                src = response.url;
+            }
 
-                // Focus editor before insertion
-                const editorElement = editor.getInternalEditor().getRootElement();
-                if (editorElement) {
-                    editorElement.focus();
-                }
+            if (src) {
+                const editorElement = internalEditor.getRootElement();
+                if (editorElement) editorElement.focus();
 
-                // Small delay to ensure focus
                 setTimeout(() => {
-                    editor.getInternalEditor().update(() => {
-                        const imageNode = $createImageNode(response.url, currentImage!.altText || 'Image', 500);
+                    internalEditor.update(() => {
+                        const imageNode = $createImageNode(src!, currentImage!.altText || 'Image', 500);
                         $insertNodes([imageNode]);
-                    });
-                }, 50);
-            } else if (currentImage.url) {
-                // Insert from URL
-                // Focus editor before insertion
-                const editorElement = editor.getInternalEditor().getRootElement();
-                if (editorElement) {
-                    editorElement.focus();
-                }
 
-                // Small delay to ensure focus
-                setTimeout(() => {
-                    editor.getInternalEditor().update(() => {
-                        const imageNode = $createImageNode(currentImage!.url!, currentImage!.altText || 'Image', 500);
-                        $insertNodes([imageNode]);
+                        // Auto-select the image so handles are visible immediately
+                        const nodeSelection = $createNodeSelection();
+                        nodeSelection.add(imageNode.getKey());
+                        $setSelection(nodeSelection);
                     });
                 }, 50);
             }
             hideModal();
         } catch (error) {
             console.error('Failed to insert image:', error);
-            alert('Failed to insert image. Please try again.');
         }
     };
 
     insertBtn.addEventListener('click', insertImage);
     cancelBtn.addEventListener('click', hideModal);
 
-    // Close on backdrop click
     modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            hideModal();
-        }
+        if (e.target === modal) hideModal();
     });
 
-    // Keyboard shortcuts
     modal.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-            hideModal();
-        } else if (e.key === 'Enter' && !insertBtn.disabled) {
-            insertImage();
-        }
+        if (e.key === 'Escape') hideModal();
+        else if (e.key === 'Enter' && !insertBtn.disabled) insertImage();
     });
 
     return { showModal };

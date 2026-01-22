@@ -10,6 +10,7 @@
 @import './ui/css/image-url-modal.css';
 @import './ui/css/unified-image-modal.css';
 @import './ui/css/productivity.css';
+@import './ui/css/table-layout.css';
 
 /* Plugin Specifics */
 @import './ui/css/placeholder.css';
@@ -22,6 +23,10 @@
 @import './ui/css/emoji-picker.css';
 @import './ui/css/track-changes.css';
 @import './ui/css/code-syntax.css';
+@import './ui/css/code-blocks.css';
+@import './ui/css/code-block-popover.css';
+@import './ui/css/source-view.css';
+@import './ui/css/autosave.css';
 
 /* Maintenance Note: 
    This file is the central hub for the design system.

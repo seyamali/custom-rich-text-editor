@@ -1,0 +1,107 @@
+/* ========================================
+   CODE BLOCK POPOVER
+   ======================================== */
+
+.code-block-popover {
+    position: absolute;
+    z-index: 1000;
+    background: #ffffff;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    padding: 12px;
+    min-width: 280px;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.code-block-popover.hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-4px);
+}
+
+.code-block-popover-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.code-block-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    font-size: 13px;
+    font-weight: 500;
+    color: #374151;
+}
+
+.code-block-label span {
+    white-space: nowrap;
+}
+
+.code-language-select {
+    flex: 1;
+    padding: 6px 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    background: #ffffff;
+    font-size: 13px;
+    color: #374151;
+    cursor: pointer;
+    transition: border-color 0.2s ease;
+}
+
+.code-language-select:hover {
+    border-color: #9ca3af;
+}
+
+.code-language-select:focus {
+    outline: none;
+    border-color: #61afef;
+    box-shadow: 0 0 0 3px rgba(97, 175, 239, 0.1);
+}
+
+.code-block-delete-btn {
+    padding: 6px 12px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 4px;
+    color: #dc2626;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.code-block-delete-btn:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.5);
+}
+
+.code-block-delete-btn:active {
+    transform: scale(0.98);
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    .code-block-popover {
+        background: #1f2937;
+        border-color: #374151;
+    }
+
+    .code-block-label {
+        color: #e5e7eb;
+    }
+
+    .code-language-select {
+        background: #111827;
+        border-color: #374151;
+        color: #e5e7eb;
+    }
+
+    .code-language-select:hover {
+        border-color: #4b5563;
+    }
+}

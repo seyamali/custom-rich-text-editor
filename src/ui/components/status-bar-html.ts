@@ -6,6 +6,7 @@ export const STATUS_BAR_HTML = `
               <span id="char-count">0 characters</span>
           </div>
           <div class="status-right">
+              <span id="autosave-status" class="autosave-status"></span>
               <span id="reading-time">1 min read</span>
           </div>
       </div>

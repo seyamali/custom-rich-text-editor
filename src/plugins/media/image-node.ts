@@ -11,7 +11,9 @@ import type {
     LexicalNode,
     SerializedLexicalNode,
     Spread,
-    LexicalEditor
+    LexicalEditor,
+    DOMConversionMap,
+    DOMExportOutput
 } from 'lexical';
 
 
@@ -84,6 +86,85 @@ export class ImageNode extends DecoratorNode<HTMLElement> {
             node.__cropData,
             node.__key
         );
+    }
+
+    static importDOM(): DOMConversionMap | null {
+        return {
+            figure: (node: Node) => {
+                if ((node as HTMLElement).classList.contains('editor-image-figure')) {
+                    return {
+                        conversion: (domNode: Node) => {
+                            const figure = domNode as HTMLElement;
+                            const img = figure.querySelector('img');
+                            const figcaption = figure.querySelector('figcaption');
+
+                            if (!img) return null;
+
+                            const src = img.src;
+                            const altText = img.alt;
+                            const width = img.getAttribute('data-width') ? parseInt(img.getAttribute('data-width')!) : img.width;
+                            const height = img.getAttribute('data-height') ? parseInt(img.getAttribute('data-height')!) : img.height;
+                            const alignment = img.getAttribute('data-alignment') as ImageAlignment || 'center';
+                            const caption = figcaption ? figcaption.innerText : '';
+
+                            const node = $createImageNode(src, altText, 500);
+                            node.setWidthAndHeight(width || 'inherit', height || 'inherit');
+                            node.setAlignment(alignment);
+                            if (caption) {
+                                node.setShowCaption(true);
+                                node.setCaption(caption);
+                            }
+                            return { node };
+                        },
+                        priority: 1,
+                    };
+                }
+                return null;
+            },
+            img: (_node: Node) => ({
+                conversion: (domNode: Node) => {
+                    const img = domNode as HTMLImageElement;
+                    const src = img.src;
+                    const altText = img.alt;
+                    // Try to recover metadata from data attributes if they exist
+                    const width = img.getAttribute('data-width') ? parseInt(img.getAttribute('data-width')!) : img.width;
+                    const height = img.getAttribute('data-height') ? parseInt(img.getAttribute('data-height')!) : img.height;
+                    const alignment = img.getAttribute('data-alignment') as ImageAlignment || 'center';
+
+                    const node = $createImageNode(src, altText, 500);
+                    node.setWidthAndHeight(width || 'inherit', height || 'inherit');
+                    node.setAlignment(alignment);
+                    return { node };
+                },
+                priority: 0,
+            }),
+        };
+    }
+
+    exportDOM(): DOMExportOutput {
+        const img = document.createElement('img');
+        img.setAttribute('src', this.__src);
+        img.setAttribute('alt', this.__altText);
+        img.setAttribute('data-width', this.__width.toString());
+        img.setAttribute('data-height', this.__height.toString());
+        img.setAttribute('data-alignment', this.__alignment);
+
+        if (this.__width !== 'inherit') img.style.width = `${this.__width}px`;
+        if (this.__height !== 'inherit') img.style.height = `${this.__height}px`;
+
+        if (this.__showCaption && this.__caption) {
+            const figure = document.createElement('figure');
+            figure.className = `editor-image-figure alignment-${this.__alignment}`;
+
+            const figcaption = document.createElement('figcaption');
+            figcaption.innerText = this.__caption;
+
+            figure.appendChild(img);
+            figure.appendChild(figcaption);
+            return { element: figure };
+        }
+
+        return { element: img };
     }
 
     static importJSON(serializedNode: SerializedImageNode): ImageNode {
@@ -226,7 +307,7 @@ export class ImageNode extends DecoratorNode<HTMLElement> {
             imgContainer.appendChild(img);
         }
 
-        // Resize Handles
+        // Resize Handles (moved back inside imgContainer so they don't block the caption area)
         const resizer = document.createElement('div');
         resizer.className = 'image-resizer';
         ['nw', 'ne', 'sw', 'se'].forEach(dir => {
@@ -242,15 +323,19 @@ export class ImageNode extends DecoratorNode<HTMLElement> {
             const caption = document.createElement('div');
             caption.className = 'image-caption';
             caption.contentEditable = 'true';
-            caption.innerText = this.__caption || 'Write a caption...';
+            caption.setAttribute('data-placeholder', 'Write a caption...');
+            caption.innerText = this.__caption;
 
             caption.addEventListener('input', (e) => {
                 const val = (e.target as HTMLElement).innerText;
-                if (editor) {
-                    editor.update(() => {
-                        this.setCaption(val);
-                    });
-                }
+                editor.update(() => {
+                    this.setCaption(val);
+                });
+            });
+
+            // Prevent caption from losing focus too easily
+            caption.addEventListener('click', (e) => {
+                e.stopPropagation();
             });
 
             container.appendChild(caption);

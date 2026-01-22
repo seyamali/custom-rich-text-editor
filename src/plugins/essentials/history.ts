@@ -8,6 +8,7 @@ export const HistoryPlugin: EditorPlugin = {
     init: (sdk: EditorSDK) => {
         const editor = sdk.getLexicalEditor();
         // Register history with a 1000-step limit
+        // We use a shared history state to allow CAN_UNDO commands to work properly
         registerHistory(editor, createEmptyHistoryState(), 1000);
         console.log("History (Undo/Redo) initialized");
     }

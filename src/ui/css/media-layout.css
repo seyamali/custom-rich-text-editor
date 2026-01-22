@@ -1,29 +1,37 @@
 /* Image Advanced Styling */
 .image-node-container {
     display: block;
-    user-select: none;
+    overflow: visible;
 }
 
 .image-wrapper {
     position: relative;
     margin: 20px 0;
-    line-height: 0;
+    line-height: normal;
+    /* Better for text around images */
     display: flex;
     flex-direction: column;
+    overflow: visible;
 }
 
 .image-wrapper.alignment-center {
     align-items: center;
+    width: fit-content;
+    margin-left: auto;
+    margin-right: auto;
+    overflow: visible;
 }
 
 .image-wrapper.alignment-left {
     float: left;
     margin-right: 20px;
+    overflow: visible;
 }
 
 .image-wrapper.alignment-right {
     float: right;
     margin-left: 20px;
+    overflow: visible;
 }
 
 .image-wrapper.alignment-full {
@@ -32,7 +40,9 @@
 
 .image-content {
     position: relative;
-    display: inline-block;
+    display: block;
+    width: fit-content;
+    overflow: visible;
 }
 
 .image-content img {
@@ -40,88 +50,121 @@
     max-width: 100%;
     height: auto;
     border: 1px solid transparent;
-    transition: border-color 0.2s;
 }
 
-.image-wrapper:hover .image-content img,
-.image-wrapper.selected .image-content img {
+.image-wrapper:not(.selected):hover .image-content img {
     border-color: #0782ed;
 }
 
 /* Resize Handles */
+/* Resize Handles Visibility Fix */
 .image-resizer {
     position: absolute;
     top: 0;
     left: 0;
-    right: 0;
-    bottom: 0;
+    width: 100%;
+    height: 100%;
     pointer-events: none;
-    display: none;
+    z-index: 1000;
+    /* Extremely high z-index */
+    display: none !important;
 }
 
-.image-wrapper.selected .image-resizer {
-    display: block;
+/* Ultra-robust selection rules */
+.image-wrapper.selected .image-resizer,
+.image-wrapper[data-selected="true"] .image-resizer,
+.image-node-container.selected .image-resizer,
+.image-node-container[data-selected="true"] .image-resizer {
+    display: block !important;
 }
 
 .resizer-handle {
     position: absolute;
-    width: 12px;
-    height: 12px;
-    background: #0782ed;
-    border: 2px solid white;
+    width: 16px;
+    height: 16px;
+    background: #ff9f43;
+    /* Bright Orange */
+    border: 2px solid #fff;
     border-radius: 50%;
     pointer-events: auto;
-    z-index: 10;
+    z-index: 2000;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
+    cursor: crosshair;
+}
+
+.image-wrapper[data-selected="true"] .resizer-handle,
+.image-node-container[data-selected="true"] .resizer-handle {
+    animation: handlePulse 1.5s infinite;
+}
+
+.resizer-handle:hover {
+    transform: scale(1.4);
+    background: #ff6b6b;
+    animation: none;
+    /* Stop pulsing on hover */
 }
 
 .handle-nw {
-    top: -6px;
-    left: -6px;
+    top: -8px;
+    left: -8px;
     cursor: nw-resize;
 }
 
 .handle-ne {
-    top: -6px;
-    right: -6px;
+    top: -8px;
+    right: -8px;
     cursor: ne-resize;
 }
 
 .handle-sw {
-    bottom: -6px;
-    left: -6px;
+    bottom: -8px;
+    left: -8px;
     cursor: sw-resize;
 }
 
 .handle-se {
-    bottom: -6px;
-    right: -6px;
+    bottom: -8px;
+    right: -8px;
     cursor: se-resize;
+}
+
+/* resizing state */
+.image-wrapper.resizing .image-content img {
+    outline: 2px dashed #ff9f43;
+    opacity: 0.8;
+}
+
+.image-wrapper.resizing .resizer-handle {
+    background: #ff6b6b;
 }
 
 /* Caption Styling */
 .image-caption {
     margin-top: 10px;
-    padding: 8px 12px;
+    padding: 10px 15px;
     font-size: 14px;
-    color: #586069;
+    color: #4b5563;
     text-align: center;
-    background: #f8f9fa;
-    border-radius: 6px;
-    border: 1px dashed transparent;
-    line-height: 1.5;
+    background: #fdfdfd;
+    border: 1px dashed #e1e4e8;
+    border-radius: 8px;
+    line-height: 1.6;
     outline: none;
-    transition: all 0.2s;
+    min-height: 20px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02);
 }
 
-.image-caption:focus,
-.image-caption:hover {
-    border-color: #0782ed;
-    background: white;
+.image-caption:focus {
+    border: 1px solid #0782ed;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(7, 130, 237, 0.1), inset 0 1px 2px rgba(0, 0, 0, 0.02);
 }
 
 .image-caption:empty::before {
     content: attr(data-placeholder);
-    color: #aaa;
+    color: #9ca3af;
+    font-style: italic;
 }
 
 

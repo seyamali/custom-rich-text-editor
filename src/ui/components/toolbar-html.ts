@@ -2,8 +2,15 @@ export const TOOLBAR_HTML = `
       <div id="toolbar" class="toolbar" role="toolbar" aria-label="Editor toolbar">
         <button id="undo-btn" data-i18n="undo" data-i18n-icon="↶" aria-label="Undo">↶ Undo</button>
         <button id="redo-btn" data-i18n="redo" data-i18n-icon="↷" aria-label="Redo">↷ Redo</button>
+        <span class="divider"></span>
+        <button id="cut-btn" title="Cut (Ctrl+X)">✂️ Cut</button>
+        <button id="copy-btn" title="Copy (Ctrl+C)">📋 Copy</button>
+        <button id="paste-btn" title="Paste (Ctrl+V)">📥 Paste</button>
+        <button id="paste-plain-btn" title="Paste as Plain Text (Ctrl+Shift+V)">📄 Paste Plain</button>
+        <span class="divider"></span>
         <button id="clear-btn" data-i18n="clearFormatting" aria-label="Clear formatting">Clear Format</button>
         <button id="format-painter-btn" aria-label="Format Painter">🖌️ Painter</button>
+        <button id="find-btn" title="Find & Replace (Ctrl+F)">🔍 Find</button>
         
         <span class="divider"></span>
 
@@ -39,6 +46,7 @@ export const TOOLBAR_HTML = `
 
         <button id="link-btn" data-i18n="link" data-i18n-icon="🔗">🔗 Link</button>
         <button id="image-btn" data-i18n="image" data-i18n-icon="🖼️" title="Insert Image (Upload, URL, Paste, or Drag & Drop)">🖼️ Image</button>
+        <button id="emoji-btn" data-i18n="emoji" data-i18n-icon="😀" title="Insert Emoji">😀 Emoji</button>
         <button id="table-btn" data-i18n="table" data-i18n-icon="📅">📅 Table</button>
 
         <button id="video-btn" data-i18n="youtube" data-i18n-icon="📹">📹 Video</button>

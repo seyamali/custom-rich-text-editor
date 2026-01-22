@@ -1,5 +1,5 @@
 import { TOGGLE_LINK_COMMAND, registerAutoLink, toggleLink } from '@lexical/link';
-import { COMMAND_PRIORITY_EDITOR } from 'lexical';
+import { COMMAND_PRIORITY_EDITOR, $getSelection, $isRangeSelection } from 'lexical';
 import { EditorSDK } from '../../core/sdk';
 import type { EditorPlugin } from '../../core/registry';
 
@@ -16,6 +16,13 @@ export const LinksPlugin: EditorPlugin = {
                 (text: string) => {
                     const match = URL_MATCHER.exec(text);
                     if (match) {
+                        // Optimization: If the match is preceded by a Zero-Width Space (\u200B),
+                        // it means the user has explicitly unlinked this URL. 
+                        // We should not auto-link it again.
+                        if (match.index > 0 && text[match.index - 1] === '\u200B') {
+                            return null;
+                        }
+
                         return {
                             index: match.index,
                             length: match[0].length,
@@ -26,7 +33,6 @@ export const LinksPlugin: EditorPlugin = {
                     return null;
                 },
             ],
-            // This was the missing property causing the error
             changeHandlers: [],
         });
 
@@ -34,8 +40,19 @@ export const LinksPlugin: EditorPlugin = {
         sdk.registerCommand(
             TOGGLE_LINK_COMMAND,
             (payload: any) => {
+                const selection = $getSelection();
                 if (payload === null) {
                     toggleLink(null);
+                    // Add an invisible marker to prevent AutoLink from re-triggering on this text.
+                    // We collapse to start to ensure we don't overwrite the existing text.
+                    if ($isRangeSelection(selection)) {
+                        if (selection.isBackward()) {
+                            selection.anchor.set(selection.focus.key, selection.focus.offset, selection.focus.type);
+                        } else {
+                            selection.focus.set(selection.anchor.key, selection.anchor.offset, selection.anchor.type);
+                        }
+                        selection.insertText('\u200B');
+                    }
                     return true;
                 } else if (typeof payload === 'string') {
                     toggleLink(payload);

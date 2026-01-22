@@ -1,0 +1,73 @@
+import { LinkNode, type SerializedLinkNode } from '@lexical/link';
+import { type EditorConfig, type NodeKey, type DOMConversionMap, type DOMExportOutput, type Spread } from 'lexical';
+
+export type SerializedCustomLinkNode = Spread<{
+    attributes: Record<string, string>;
+}, SerializedLinkNode>;
+
+export class CustomLinkNode extends LinkNode {
+    __attributes: Record<string, string>;
+
+    constructor(url: string, attributes: Record<string, string> = {}, key?: NodeKey) {
+        super(url, { target: attributes.target, rel: attributes.rel }, key);
+        this.__attributes = attributes;
+    }
+
+    static getType(): string { return 'custom-link'; }
+    static clone(node: CustomLinkNode): CustomLinkNode {
+        return new CustomLinkNode(node.getURL(), { ...node.__attributes }, node.__key);
+    }
+
+    createDOM(config: EditorConfig): HTMLElement {
+        const dom = super.createDOM(config);
+        Object.entries(this.__attributes).forEach(([k, v]) => dom.setAttribute(k, v));
+        return dom;
+    }
+
+    exportDOM(editor: any): DOMExportOutput {
+        const { element } = super.exportDOM(editor);
+        if (element instanceof HTMLElement) {
+            Object.entries(this.__attributes).forEach(([k, v]) => {
+                if (v !== undefined && v !== null && v !== '') {
+                    element.setAttribute(k, v);
+                }
+            });
+        }
+        return { element };
+    }
+
+    static importDOM(): DOMConversionMap | null {
+        return {
+            a: (_node: Node) => ({
+                conversion: (domNode: Node) => {
+                    const el = domNode as HTMLAnchorElement;
+                    const attrs: Record<string, string> = {};
+                    Array.from(el.attributes).forEach(attr => attrs[attr.name] = attr.value);
+                    return { node: $createCustomLinkNode(el.href, attrs) };
+                },
+                priority: 2,
+            }),
+        };
+    }
+
+    static importJSON(serializedNode: SerializedCustomLinkNode): CustomLinkNode {
+        const node = $createCustomLinkNode(serializedNode.url, serializedNode.attributes);
+        node.setFormat(serializedNode.format);
+        node.setIndent(serializedNode.indent);
+        node.setDirection(serializedNode.direction);
+        return node;
+    }
+
+    exportJSON(): SerializedCustomLinkNode {
+        return {
+            ...super.exportJSON(),
+            attributes: this.__attributes,
+            type: 'custom-link',
+            version: 1,
+        };
+    }
+}
+
+export function $createCustomLinkNode(url: string, attributes: Record<string, string> = {}): CustomLinkNode {
+    return new CustomLinkNode(url, attributes);
+}

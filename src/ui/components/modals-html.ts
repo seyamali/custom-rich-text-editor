@@ -1,13 +1,32 @@
 export const MODALS_HTML = `
       <!-- Find & Replace Dialog -->
+      <!-- Find & Replace Dialog -->
       <div id="find-replace-dialog" class="find-replace-dialog hidden">
-          <input type="text" id="find-input" placeholder="Find..." />
-          <input type="text" id="replace-input" placeholder="Replace with..." />
-          <div class="find-replace-buttons">
-              <button id="find-next-btn">Find Next</button>
-              <button id="replace-btn">Replace</button>
-              <button id="replace-all-btn">Replace All</button>
-              <button id="close-find-btn">❌</button>
+          <div class="fr-header">
+              <span>Find & Replace</span>
+              <button id="close-find-btn" class="fr-close-btn">&times;</button>
+          </div>
+          <div class="fr-body">
+              <div class="fr-input-group">
+                  <input type="text" id="find-input" placeholder="Find..." />
+                  <div class="fr-nav-buttons">
+                      <button id="find-prev-btn" title="Previous Match">↑</button>
+                      <button id="find-next-btn" title="Next Match">↓</button>
+                  </div>
+              </div>
+              <input type="text" id="replace-input" placeholder="Replace with..." />
+              
+              <div class="fr-options">
+                  <label title="Case Sensitive"><input type="checkbox" id="fr-opt-case" /> aA</label>
+                  <label title="Whole Word"><input type="checkbox" id="fr-opt-whole" /> [ ]</label>
+                  <label title="Regular Expression"><input type="checkbox" id="fr-opt-regex" /> .*</label>
+              </div>
+
+              <div class="fr-actions">
+                  <button id="replace-btn" class="btn-secondary-sm">Replace</button>
+                  <button id="replace-all-btn" class="btn-secondary-sm">Replace All</button>
+              </div>
+              <div class="fr-info" id="fr-info-text"></div>
           </div>
       </div>
       
@@ -15,22 +34,23 @@ export const MODALS_HTML = `
       <div id="emoji-dialog" class="emoji-picker hidden">
           <div class="emoji-header">
               <span>Pick an Emoji</span>
-              <button id="close-emoji-btn">❌</button>
+              <button id="close-emoji-btn">&times;</button>
+          </div>
+          <div class="emoji-search-area">
+              <input type="text" id="emoji-search-input" placeholder="Search emojis..." />
+          </div>
+          <div class="emoji-tabs">
+             <button class="emoji-tab active" data-category="all">All</button>
+             <button class="emoji-tab" data-category="smileys">😀</button>
+             <button class="emoji-tab" data-category="nature">🌲</button>
+             <button class="emoji-tab" data-category="objects">💡</button>
+             <button class="emoji-tab" data-category="symbols">❤️</button>
+             <button class="emoji-tab" data-category="math">Math</button>
           </div>
           <div id="emoji-grid" class="emoji-grid"></div>
       </div>
       
-      <!-- Revision History Panel -->
-      <div class="revision-panel">
-          <h3>Revision History</h3>
-          <div class="revision-controls">
-              <button id="save-revision-btn">💾 Save Version</button>
-              <button id="clear-history-btn">❌ Clear All</button>
-          </div>
-          <div id="revision-list" class="revision-list">
-              <!-- Revisions inserted here -->
-          </div>
-      </div>
+      <!-- New Revision History is handled via sidebar injected into body -->
 
       <!-- Toolbar Settings Modal -->
       <div id="toolbar-settings-modal" class="modal hidden">

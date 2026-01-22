@@ -2,13 +2,9 @@ import { $getSelection, $isNodeSelection, $getNodeByKey, $createNodeSelection, $
 import { ImageNode, $isImageNode } from './image-node';
 
 export function setupImagePopover(editor: LexicalEditor) {
-    // 1. Create the Popover Element
+    // 1. Create or Update the Popover Element
     let popover = document.getElementById('image-popover');
-    if (!popover) {
-        popover = document.createElement('div');
-        popover.id = 'image-popover';
-        popover.className = 'image-popover hidden';
-        popover.innerHTML = `
+    const popoverHTML = `
             <div class="popover-row">
                 <button id="img-align-left" title="Align Left">⬅️ Left</button>
                 <button id="img-align-center" title="Align Center">⬛ Center</button>
@@ -17,15 +13,112 @@ export function setupImagePopover(editor: LexicalEditor) {
             </div>
             <div class="popover-divider"></div>
             <div class="popover-row">
-                <input type="text" id="img-alt-input" placeholder="Alt text..." />
-                <button id="img-unlink-btn" title="Remove Link" class="danger hidden">🔗 Remove Link</button>
+                <button id="img-toggle-caption" title="Toggle Caption" style="padding: 4px 8px">📝 Caption</button>
+                <div class="input-group" style="display: flex; align-items: center; gap: 4px; font-size: 12px; margin-left: 8px">
+                    <span>W:</span>
+                    <input type="number" id="img-width-input" placeholder="Width" style="width: 50px; padding: 4px" />
+                </div>
+                <div class="input-group" style="display: flex; align-items: center; gap: 4px; font-size: 12px; margin-left: 4px">
+                    <span>H:</span>
+                    <input type="number" id="img-height-input" placeholder="Height" style="width: 50px; padding: 4px" />
+                </div>
+                <span style="flex-grow: 1"></span>
+                <button id="img-unlink-btn" title="Remove Link" class="danger hidden" style="padding: 4px 8px">🔗 Unlink</button>
+            </div>
+            <div class="popover-row">
+                <input type="text" id="img-alt-input" placeholder="Alt text..." style="width: 100%; margin-top: 4px" />
             </div>
         `;
+
+    if (!popover) {
+        popover = document.createElement('div');
+        popover.id = 'image-popover';
+        popover.className = 'image-popover hidden';
+        popover.innerHTML = popoverHTML;
         document.getElementById('editor-wrapper')?.appendChild(popover);
+    } else {
+        // Force update HTML to ensure new inputs are there
+        popover.innerHTML = popoverHTML;
     }
 
-    const altInput = document.getElementById('img-alt-input') as HTMLInputElement;
-    const unlinkBtn = document.getElementById('img-unlink-btn') as HTMLButtonElement;
+    const altInput = () => document.getElementById('img-alt-input') as HTMLInputElement;
+    const unlinkBtn = () => document.getElementById('img-unlink-btn') as HTMLButtonElement;
+    const widthInput = () => document.getElementById('img-width-input') as HTMLInputElement;
+    const heightInput = () => document.getElementById('img-height-input') as HTMLInputElement;
+    const captionBtn = () => document.getElementById('img-toggle-caption') as HTMLButtonElement;
+
+    const bindPopoverListeners = () => {
+        // Alignment Buttons
+        ['left', 'center', 'right', 'full'].forEach(align => {
+            document.getElementById(`img-align-${align}`)?.addEventListener('click', () => {
+                if (!currentImageNodeKey) return;
+                editor.update(() => {
+                    const node = $getNodeByKey(currentImageNodeKey!);
+                    if ($isImageNode(node)) node.setAlignment(align as any);
+                });
+            });
+        });
+
+        // Alt Text
+        altInput()?.addEventListener('input', (e) => {
+            if (!currentImageNodeKey) return;
+            const text = (e.target as HTMLInputElement).value;
+            editor.update(() => {
+                const node = $getNodeByKey(currentImageNodeKey!);
+                if ($isImageNode(node)) node.setAltText(text);
+            });
+        });
+
+        // Unlink
+        unlinkBtn()?.addEventListener('click', () => {
+            if (!currentImageNodeKey) return;
+            editor.update(() => {
+                const node = $getNodeByKey(currentImageNodeKey!);
+                if ($isImageNode(node)) node.setLinkUrl('');
+            });
+            hidePopover();
+        });
+
+        // Caption Toggle
+        captionBtn()?.addEventListener('click', () => {
+            if (!currentImageNodeKey) return;
+            editor.update(() => {
+                const node = $getNodeByKey(currentImageNodeKey!);
+                if ($isImageNode(node)) {
+                    const show = !node.__showCaption;
+                    node.setShowCaption(show);
+                    captionBtn()?.classList.toggle('active', show);
+                }
+            });
+        });
+
+        // Width/Height
+        const onDimChange = () => {
+            if (!currentImageNodeKey) return;
+            const w = parseInt(widthInput()?.value || '0');
+            const h = parseInt(heightInput()?.value || '0');
+            if (isNaN(w) || isNaN(h)) return;
+            editor.update(() => {
+                const node = $getNodeByKey(currentImageNodeKey!);
+                if ($isImageNode(node)) node.setWidthAndHeight(w, h);
+            });
+        };
+        widthInput()?.addEventListener('change', onDimChange);
+        heightInput()?.addEventListener('change', onDimChange);
+    };
+
+    if (!popover) {
+        popover = document.createElement('div');
+        popover.id = 'image-popover';
+        popover.className = 'image-popover hidden';
+        popover.innerHTML = popoverHTML;
+        document.getElementById('editor-wrapper')?.appendChild(popover);
+    } else {
+        popover.innerHTML = popoverHTML;
+    }
+
+    // Bind listeners after ensuring HTML is set
+    bindPopoverListeners();
 
     // Helper to position the popover
     const updatePopoverPosition = (target: HTMLElement) => {
@@ -58,41 +151,44 @@ export function setupImagePopover(editor: LexicalEditor) {
 
     const showPopover = (target: HTMLElement, node: ImageNode) => {
         currentImageNodeKey = node.getKey();
-        altInput.value = node.__altText;
+        const alt = altInput();
+        if (alt) alt.value = node.__altText;
 
         // Show unlink button only if there is a link
-        if (node.__linkUrl) {
-            unlinkBtn.classList.remove('hidden');
-        } else {
-            unlinkBtn.classList.add('hidden');
+        const unlink = unlinkBtn();
+        if (unlink) {
+            if (node.__linkUrl) {
+                unlink.classList.remove('hidden');
+            } else {
+                unlink.classList.add('hidden');
+            }
         }
 
         popover!.classList.remove('hidden');
         requestAnimationFrame(() => updatePopoverPosition(target));
 
-        // Highlighting active alignment
+        // Highlighting active alignment and caption
         ['left', 'center', 'right', 'full'].forEach(align => {
-            const btn = document.getElementById(`img-align-${align}`);
-            btn?.classList.toggle('active', node.__alignment === align);
+            document.getElementById(`img-align-${align}`)?.classList.toggle('active', node.__alignment === align);
         });
+
+        const wIn = widthInput();
+        const hIn = heightInput();
+
+        if (wIn && hIn) {
+            // If inherit, we might want to show the current computed size or just 0
+            const img = target.querySelector('img');
+            wIn.value = (node.__width === 'inherit' && img) ? img.offsetWidth.toString() : node.__width.toString();
+            hIn.value = (node.__height === 'inherit' && img) ? img.offsetHeight.toString() : node.__height.toString();
+        }
+
+        captionBtn()?.classList.toggle('active', node.__showCaption);
     };
 
     const hidePopover = () => {
         currentImageNodeKey = null;
         popover?.classList.add('hidden');
     };
-
-    // Unlink button click
-    unlinkBtn.addEventListener('click', () => {
-        if (!currentImageNodeKey) return;
-        editor.update(() => {
-            const node = $getNodeByKey(currentImageNodeKey!);
-            if (node && $isImageNode(node)) {
-                node.setLinkUrl('');
-            }
-        });
-        hidePopover();
-    });
 
     // 2. Handle Interactions via Delegation (Single Click Selects, Double Click Shows Popover)
     editor.registerRootListener((rootElement, _prevRootElement) => {
@@ -109,40 +205,40 @@ export function setupImagePopover(editor: LexicalEditor) {
             // If clicked outside, hide popover (unless clicking IN the popover)
             if (!wrapper && !popover?.contains(target)) {
                 hidePopover();
+                // If clicking the editor root directly, ensure it's focused so user can type
+                if (target === rootElement) {
+                    rootElement.focus();
+                }
             }
 
             if (wrapper) {
                 const nodeKey = wrapper.getAttribute('data-node-key');
 
-                // Explicitly select the node in Lexical
                 if (nodeKey) {
                     editor.update(() => {
                         const nodeSelection = $createNodeSelection();
                         nodeSelection.add(nodeKey);
                         $setSelection(nodeSelection);
                     });
+
+                    // Proactive show: If it's already selected, show popover on click
+                    editor.getEditorState().read(() => {
+                        const node = $getNodeByKey(nodeKey);
+                        if (node && $isImageNode(node)) {
+                            showPopover(wrapper, node);
+                        }
+                    });
                 }
 
-                // Custom Double Click Detection
+                // Double Click Detection (preserved for compatibility, but single click now works too)
                 const currentTime = new Date().getTime();
                 const isSameTarget = lastClickTarget === wrapper;
                 const isQuickEnough = (currentTime - lastClickTime) < 300;
 
                 if (isSameTarget && isQuickEnough) {
-                    // Double Click Detected!
-                    if (nodeKey) {
-                        editor.getEditorState().read(() => {
-                            const node = $getNodeByKey(nodeKey);
-                            if (node && $isImageNode(node)) {
-                                showPopover(wrapper, node);
-                            }
-                        });
-                    }
-                    // Reset to prevent triple-click triggering
                     lastClickTime = 0;
                     lastClickTarget = null;
                 } else {
-                    // First Click
                     lastClickTime = currentTime;
                     lastClickTarget = wrapper;
                 }
@@ -196,7 +292,7 @@ export function setupImagePopover(editor: LexicalEditor) {
                 }
 
                 // If selection moved away from the image, hide the popover
-                if (!isCurrentNodeSelected && document.activeElement !== altInput) {
+                if (!isCurrentNodeSelected && document.activeElement !== altInput()) {
                     if (!popover?.contains(document.activeElement)) {
                         // Keep open only if focused inside
                     }
@@ -207,50 +303,46 @@ export function setupImagePopover(editor: LexicalEditor) {
         COMMAND_PRIORITY_LOW
     );
 
-    // Update visual selection state on DOM wrapper (optional, for CSS styling)
+    // Update visual selection state on DOM wrapper
     editor.registerUpdateListener(({ editorState }) => {
         editorState.read(() => {
             const selection = $getSelection();
             const root = editor.getRootElement();
             if (!root) return;
 
-            // Clear all selected classes
-            root.querySelectorAll('.image-wrapper.selected').forEach(el => el.classList.remove('selected'));
+            // Clear all selected classes from both possible targets
+            root.querySelectorAll('.image-wrapper.selected, .image-node-container.selected').forEach(el => {
+                el.classList.remove('selected');
+                el.removeAttribute('data-selected');
+            });
 
             if ($isNodeSelection(selection)) {
                 const nodes = selection.getNodes();
                 nodes.forEach(node => {
                     if ($isImageNode(node)) {
                         const el = editor.getElementByKey(node.getKey());
-                        if (el) el.classList.add('selected');
+                        if (el) {
+                            // Add to the container (span)
+                            el.classList.add('selected');
+                            el.setAttribute('data-selected', 'true');
+
+                            // Also try to add to the wrapper (div) for best CSS matching
+                            const wrapper = el.querySelector('.image-wrapper');
+                            if (wrapper) {
+                                wrapper.classList.add('selected');
+                                wrapper.setAttribute('data-selected', 'true');
+                            }
+                            console.log('Image node selected visually', node.getKey());
+                        }
+                    } else {
+                        // Clear if not an image node (safeguard)
+                        const el = editor.getElementByKey(node.getKey());
+                        if (el) {
+                            el.classList.remove('selected');
+                            el.removeAttribute('data-selected');
+                        }
                     }
                 });
-            }
-        });
-    });
-
-    // Event Listeners for Buttons
-    ['left', 'center', 'right', 'full'].forEach(align => {
-        document.getElementById(`img-align-${align}`)?.addEventListener('click', () => {
-            if (!currentImageNodeKey) return;
-
-            editor.update(() => {
-                const imageNode = $getNodeByKey(currentImageNodeKey!);
-                if (imageNode && $isImageNode(imageNode)) {
-                    imageNode.setAlignment(align as any);
-                }
-            });
-        });
-    });
-
-    altInput.addEventListener('input', (e) => {
-        if (!currentImageNodeKey) return;
-
-        const text = (e.target as HTMLInputElement).value;
-        editor.update(() => {
-            const imageNode = $getNodeByKey(currentImageNodeKey!);
-            if (imageNode && $isImageNode(imageNode)) {
-                imageNode.setAltText(text);
             }
         });
     });

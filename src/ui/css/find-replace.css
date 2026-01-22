@@ -1,44 +1,182 @@
-/* Find & Replace Dialog */
+/* Find & Replace Dialog - Premium Styling */
 .find-replace-dialog {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
     position: absolute;
-    top: 50px;
+    top: 60px;
     right: 20px;
-    background: white;
-    border: 1px solid #ccc;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    padding: 10px;
-    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    padding: 16px;
+    border-radius: 12px;
     z-index: 1000;
-    width: 250px;
+    width: 300px;
+    font-family: 'Inter', system-ui, sans-serif;
+    animation: fr-slide-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .find-replace-dialog.hidden {
     display: none;
 }
 
-.find-replace-dialog input {
-    padding: 5px;
-    border: 1px solid #ddd;
-    border-radius: 3px;
+@keyframes fr-slide-in {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
-.find-replace-buttons {
+.fr-header {
     display: flex;
-    gap: 5px;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+    color: #374151;
+    font-size: 14px;
+    border-bottom: 1px solid #f3f4f6;
+    padding-bottom: 8px;
+    margin-bottom: 4px;
 }
 
-.find-replace-buttons button {
-    flex: 1;
-    padding: 5px;
+.fr-close-btn {
+    background: none;
+    border: none;
+    font-size: 18px;
+    color: #9ca3af;
     cursor: pointer;
-    background-color: #f0f0f0;
-    border: 1px solid #ccc;
-    border-radius: 3px;
+    padding: 0;
+    line-height: 1;
 }
 
-.find-replace-buttons button:hover {
-    background-color: #e0e0e0;
+.fr-close-btn:hover {
+    color: #ef4444;
+}
+
+.fr-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.fr-input-group {
+    display: flex;
+    gap: 8px;
+}
+
+.fr-input-group input,
+.find-replace-dialog input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    font-size: 13px;
+    background: #f9fafb;
+    transition: all 0.2s;
+}
+
+.fr-input-group input:focus,
+.find-replace-dialog input:focus {
+    outline: none;
+    border-color: #6366f1;
+    background: white;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+}
+
+.fr-nav-buttons {
+    display: flex;
+    gap: 2px;
+}
+
+.fr-nav-buttons button {
+    padding: 4px 8px;
+    border: 1px solid #e5e7eb;
+    background: white;
+    cursor: pointer;
+    color: #4b5563;
+}
+
+.fr-nav-buttons button:first-child {
+    border-radius: 6px 0 0 6px;
+    border-right: none;
+}
+
+.fr-nav-buttons button:last-child {
+    border-radius: 0 6px 6px 0;
+}
+
+.fr-nav-buttons button:hover {
+    background: #f3f4f6;
+    color: #111827;
+}
+
+.fr-options {
+    display: flex;
+    gap: 12px;
+    font-size: 12px;
+    color: #6b7280;
+    padding: 0 4px;
+}
+
+.fr-options label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.fr-options input {
+    margin: 0;
+}
+
+.fr-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.fr-actions button {
+    flex: 1;
+    padding: 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+}
+
+#replace-btn {
+    background: white;
+    border-color: #e5e7eb;
+    color: #374151;
+}
+
+#replace-btn:hover {
+    border-color: #d1d5db;
+    background: #f9fafb;
+}
+
+#replace-all-btn {
+    background: #6366f1;
+    color: white;
+}
+
+#replace-all-btn:hover {
+    background: #4f46e5;
+}
+
+.fr-info {
+    font-size: 11px;
+    color: #9ca3af;
+    text-align: center;
+    min-height: 16px;
 }

@@ -32,6 +32,13 @@
     color: #2d3748;
 }
 
+.toolbar button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: transparent !important;
+    color: #a0aec0 !important;
+}
+
 .toolbar button.active {
     background: #e2e8f0;
     color: #007bff;

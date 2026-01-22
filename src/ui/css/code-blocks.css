@@ -1,0 +1,323 @@
+/* ========================================
+   CODE BLOCKS - Advanced Styling
+   ======================================== */
+
+/* Code Block Wrapper (now the code element itself) */
+.code-block-wrapper {
+    display: block;
+    position: relative;
+    margin: 20px 0;
+    padding: 20px;
+    padding-top: 48px;
+    /* Extra space for buttons */
+    border-radius: 8px;
+    background: #282c34 !important;
+    /* Force background for code blocks */
+    border: 1px solid #3e4451;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    transition: box-shadow 0.2s ease;
+    min-height: 80px;
+
+    /* Text formatting */
+    font-family: 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #abb2bf;
+    white-space: pre;
+    tab-size: 4;
+    -moz-tab-size: 4;
+
+    /* Scrolling */
+    overflow-x: auto;
+    z-index: 1;
+}
+
+.code-block-wrapper:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+/* Copy Button */
+.code-copy-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    padding: 6px 12px;
+    background: rgba(97, 175, 239, 0.15);
+    /* Slightly more visible */
+    border: 1px solid rgba(97, 175, 239, 0.4);
+    border-radius: 4px;
+    color: #61afef;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 1000;
+    /* High z-index to stay above syntax highlighting */
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    pointer-events: auto;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+}
+
+.code-copy-btn:hover {
+    background: rgba(97, 175, 239, 0.2);
+    border-color: rgba(97, 175, 239, 0.5);
+    transform: translateY(-1px);
+}
+
+.code-copy-btn:active {
+    transform: translateY(0);
+}
+
+.code-copy-btn.copied {
+    background: rgba(152, 195, 121, 0.2);
+    border-color: rgba(152, 195, 121, 0.5);
+    color: #98c379;
+}
+
+/* Language Badge */
+.code-language-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    padding: 4px 10px;
+    background: rgba(198, 120, 221, 0.15);
+    border: 1px solid rgba(198, 120, 221, 0.3);
+    border-radius: 4px;
+    color: #c678dd;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    z-index: 100;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+}
+
+/* Inline Code (for <code> tags within text) */
+.editor-text-code {
+    background-color: rgba(198, 120, 221, 0.15);
+    border: 1px solid rgba(198, 120, 221, 0.3);
+    border-radius: 3px;
+    padding: 2px 6px;
+    font-family: 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 0.9em;
+    color: #c678dd;
+}
+
+/* ========================================
+   SYNTAX HIGHLIGHTING
+   ======================================== */
+
+/* Keywords (if, else, function, class, etc.) */
+.editor-code-keyword {
+    color: #c678dd;
+    font-weight: 600;
+}
+
+/* Functions */
+.editor-code-function {
+    color: #61afef;
+}
+
+/* Strings */
+.editor-code-string {
+    color: #98c379;
+}
+
+/* Comments */
+.editor-code-comment {
+    color: #5c6370;
+    font-style: italic;
+}
+
+/* Variables */
+.editor-code-variable {
+    color: #e06c75;
+}
+
+/* Numbers */
+.editor-code-number {
+    color: #d19a66;
+}
+
+/* Operators */
+.editor-code-operator {
+    color: #56b6c2;
+}
+
+/* Punctuation */
+.editor-code-punctuation {
+    color: #abb2bf;
+}
+
+/* Class Names */
+.editor-code-class-name {
+    color: #e5c07b;
+}
+
+/* Properties */
+.editor-code-property {
+    color: #e06c75;
+}
+
+/* Tags (HTML/XML) */
+.editor-code-tag {
+    color: #e06c75;
+}
+
+/* Attributes */
+.editor-code-attr {
+    color: #d19a66;
+}
+
+/* Built-in */
+.editor-code-builtin {
+    color: #e5c07b;
+}
+
+/* Boolean */
+.editor-code-boolean {
+    color: #d19a66;
+}
+
+/* Regex */
+.editor-code-regex {
+    color: #98c379;
+}
+
+/* Selector (CSS) */
+.editor-code-selector {
+    color: #e06c75;
+}
+
+/* URL */
+.editor-code-url {
+    color: #56b6c2;
+    text-decoration: underline;
+}
+
+/* Important */
+.editor-code-important {
+    color: #e06c75;
+    font-weight: bold;
+}
+
+/* Deleted (diff) */
+.editor-code-deleted {
+    color: #e06c75;
+    background: rgba(224, 108, 117, 0.1);
+}
+
+/* Inserted (diff) */
+.editor-code-inserted {
+    color: #98c379;
+    background: rgba(152, 195, 121, 0.1);
+}
+
+/* Additional Syntax Classes */
+.editor-code-atrule {
+    color: #c678dd;
+}
+
+.editor-code-constant {
+    color: #d19a66;
+}
+
+.editor-code-namespace {
+    color: #e5c07b;
+}
+
+.editor-code-symbol {
+    color: #61afef;
+}
+
+.editor-code-entity {
+    color: #e5c07b;
+}
+
+.editor-code-cdata,
+.editor-code-doctype,
+.editor-code-prolog {
+    color: #5c6370;
+    font-style: italic;
+}
+
+.editor-code-char {
+    color: #98c379;
+}
+
+/* ========================================
+   LINE NUMBERS (Optional Feature)
+   ======================================== */
+
+.code-block-wrapper.with-line-numbers {
+    padding-left: 60px;
+}
+
+.code-block-wrapper.with-line-numbers::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 50px;
+    background: rgba(0, 0, 0, 0.2);
+    border-right: 1px solid #3e4451;
+}
+
+/* ========================================
+   SCROLLBAR STYLING FOR CODE BLOCKS
+   ======================================== */
+
+.code-block-wrapper::-webkit-scrollbar {
+    height: 8px;
+}
+
+.code-block-wrapper::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+}
+
+.code-block-wrapper::-webkit-scrollbar-thumb {
+    background: rgba(97, 175, 239, 0.3);
+    border-radius: 4px;
+}
+
+.code-block-wrapper::-webkit-scrollbar-thumb:hover {
+    background: rgba(97, 175, 239, 0.5);
+}
+
+/* ========================================
+   RESPONSIVE DESIGN
+   ======================================== */
+
+@media (max-width: 768px) {
+    .code-block-wrapper code {
+        font-size: 12px;
+        padding: 15px;
+    }
+
+    .code-copy-btn {
+        padding: 4px 8px;
+        font-size: 11px;
+    }
+
+    .code-language-badge {
+        font-size: 10px;
+        padding: 3px 8px;
+    }
+}
+
+/* ========================================
+   FOCUS STATE
+   ======================================== */
+
+.code-block-wrapper:focus-within {
+    outline: 2px solid rgba(97, 175, 239, 0.5);
+    outline-offset: 2px;
+}

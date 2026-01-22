@@ -1,38 +1,70 @@
-import { type LexicalEditor, $getNodeByKey } from 'lexical';
-import { ImageNode } from './image-node';
 
+import { type LexicalEditor, $getNodeByKey } from 'lexical';
+import { $isImageNode } from './image-node';
+import { $isYouTubeNode } from '../advanced/youtube-node';
+
+/**
+ * Universal Resizer for Images and YouTube Embeds.
+ * Handles dragging resizer handles to update node dimensions.
+ */
 export function setupImageResizer(editor: LexicalEditor) {
+    if ((editor as any)._resizerSetup) return;
+    (editor as any)._resizerSetup = true;
+
     let isResizing = false;
     let startX = 0;
+    let startY = 0;
     let startWidth = 0;
+    let startHeight = 0;
     let aspectRatio = 1;
     let activeNodeKey: string | null = null;
     let activeDirection: string | null = null;
 
     const onMouseDown = (e: MouseEvent) => {
         const target = e.target as HTMLElement;
-        if (target.classList.contains('resizer-handle')) {
+        const handle = target.closest('.resizer-handle');
+
+        if (handle) {
+            console.log('Resizer mousedown detected on handle', handle);
             e.preventDefault();
             e.stopPropagation();
 
-            const imageWrapper = target.closest('.image-wrapper') as HTMLElement;
-            if (!imageWrapper) return;
+            const wrapper = handle.closest('.image-wrapper, .media-wrapper, .youtube-wrapper, [data-node-key]') as HTMLElement;
+            if (!wrapper) {
+                console.warn('Resizer: No wrapper found for handle');
+                return;
+            }
 
-            const img = imageWrapper.querySelector('img');
-            if (!img) return;
+            const mediaEl = wrapper.querySelector('img, iframe') as HTMLElement;
+            if (!mediaEl) {
+                console.warn('Resizer: No img or iframe found inside wrapper');
+                return;
+            }
 
-            activeNodeKey = imageWrapper.getAttribute('data-node-key');
-            if (!activeNodeKey) return;
+            const nodeKey = wrapper.getAttribute('data-node-key');
+            if (!nodeKey) {
+                console.warn('Resizer: No data-node-key found on wrapper');
+                return;
+            }
 
+            activeNodeKey = nodeKey;
             isResizing = true;
             startX = e.clientX;
-            startWidth = img.clientWidth;
-            aspectRatio = startWidth / img.clientHeight;
+            startY = e.clientY;
 
-            activeDirection = target.className.split(' ').find(c => c.startsWith('handle-'))?.replace('handle-', '') || 'se';
+            startWidth = mediaEl.offsetWidth;
+            startHeight = mediaEl.offsetHeight;
+            aspectRatio = startWidth / startHeight || 1;
 
-            document.addEventListener('mousemove', onMouseMove);
-            document.addEventListener('mouseup', onMouseUp);
+            const classes = Array.from(handle.classList);
+            const dirClass = classes.find(c => c.startsWith('handle-'));
+            activeDirection = dirClass ? dirClass.replace('handle-', '') : 'se';
+
+            console.log('Resizing started', { activeNodeKey, startWidth, startHeight });
+
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('mouseup', onMouseUp);
+            wrapper.classList.add('resizing');
         }
     };
 
@@ -40,46 +72,77 @@ export function setupImageResizer(editor: LexicalEditor) {
         if (!isResizing || !activeNodeKey) return;
 
         const diffX = e.clientX - startX;
-        let nextWidth = startWidth;
+        const diffY = e.clientY - startY;
 
-        if (activeDirection?.includes('e')) nextWidth = startWidth + diffX;
-        if (activeDirection?.includes('w')) nextWidth = startWidth - diffX;
+        let multX = activeDirection?.includes('w') ? -1 : 1;
+        let multY = activeDirection?.includes('n') ? -1 : 1;
 
-        // Boundaries
-        if (nextWidth < 20) nextWidth = 20;
+        let changeX = diffX * multX;
+        let changeY = diffY * multY;
 
-        const nextHeight = nextWidth / aspectRatio;
+        let nextWidth, nextHeight;
 
-        // Visual update only during drag
-        const selectedImg = document.querySelector(`.image-wrapper[data-node-key="${activeNodeKey}"] img`) as HTMLImageElement;
-        if (selectedImg) {
-            selectedImg.style.width = `${nextWidth}px`;
-            selectedImg.style.height = `${nextHeight}px`;
+        // Pick dominant change for aspect ratio lock
+        if (Math.abs(changeX) > Math.abs(changeY * aspectRatio)) {
+            nextWidth = Math.max(50, startWidth + changeX);
+            nextHeight = nextWidth / aspectRatio;
+        } else {
+            nextHeight = Math.max(50 / aspectRatio, startHeight + changeY);
+            nextWidth = nextHeight * aspectRatio;
+        }
+
+        const wrapper = document.querySelector(`[data-node-key="${activeNodeKey}"]`) as HTMLElement;
+        const mediaEl = wrapper?.querySelector('img, iframe') as HTMLElement;
+
+        if (mediaEl) {
+            const roundedWidth = Math.round(nextWidth);
+            const roundedHeight = Math.round(nextHeight);
+            mediaEl.style.width = `${roundedWidth}px`;
+            mediaEl.style.height = `${roundedHeight}px`;
+
+            // Sync popover inputs if they exist (for images)
+            const wInput = document.getElementById('img-width-input') as HTMLInputElement;
+            const hInput = document.getElementById('img-height-input') as HTMLInputElement;
+            if (wInput) wInput.value = roundedWidth.toString();
+            if (hInput) hInput.value = roundedHeight.toString();
         }
     };
 
     const onMouseUp = () => {
         if (!isResizing || !activeNodeKey) return;
-        isResizing = false;
 
-        const img = document.querySelector(`.image-wrapper[data-node-key="${activeNodeKey}"] img`) as HTMLImageElement;
-        if (img) {
-            const finalWidth = img.clientWidth;
-            const finalHeight = img.clientHeight;
-            const key = activeNodeKey;
+        const key = activeNodeKey;
+        const wrapper = document.querySelector(`[data-node-key="${key}"]`) as HTMLElement;
+        const mediaEl = wrapper?.querySelector('img, iframe') as HTMLElement;
+
+        if (mediaEl) {
+            const finalWidth = Math.round(mediaEl.offsetWidth);
+            const finalHeight = Math.round(mediaEl.offsetHeight);
 
             editor.update(() => {
                 const node = $getNodeByKey(key);
-                if (node instanceof ImageNode) {
+                if ($isImageNode(node)) {
+                    node.setWidthAndHeight(finalWidth, finalHeight);
+                } else if ($isYouTubeNode(node)) {
                     node.setWidthAndHeight(finalWidth, finalHeight);
                 }
             });
         }
 
+        if (wrapper) wrapper.classList.remove('resizing');
+
+        isResizing = false;
         activeNodeKey = null;
-        document.removeEventListener('mousemove', onMouseMove);
-        document.removeEventListener('mouseup', onMouseUp);
+        activeDirection = null;
+
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
     };
 
-    document.addEventListener('mousedown', onMouseDown);
+    return editor.registerRootListener((rootElement) => {
+        if (rootElement) {
+            rootElement.addEventListener('mousedown', onMouseDown);
+            return () => rootElement.removeEventListener('mousedown', onMouseDown);
+        }
+    });
 }

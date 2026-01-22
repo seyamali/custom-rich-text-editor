@@ -1,42 +1,230 @@
-/* Suggestion Nodes */
+/* ========================================
+   TRACK CHANGES & SUGGESTIONS - Premium
+   ======================================== */
+
+:root {
+    --tc-insert-bg: rgba(34, 197, 94, 0.15);
+    --tc-insert-text: #15803d;
+    --tc-delete-bg: rgba(239, 68, 68, 0.1);
+    --tc-delete-text: #b91c1c;
+    --tc-format-bg: rgba(59, 130, 246, 0.1);
+    --tc-format-text: #1d4ed8;
+    --tc-sidebar-width: 320px;
+}
+
+/* Suggestion In-Editor Styles */
 .suggestion-node {
-    position: relative;
-    cursor: help;
+    padding: 1px 0;
+    border-radius: 2px;
+    transition: background-color 0.2s;
+    cursor: pointer;
 }
 
 .suggestion-insert {
-    color: #2e7d32;
-    text-decoration: underline;
-    background-color: #e8f5e9;
+    background-color: var(--tc-insert-bg);
+    color: var(--tc-insert-text);
+    border-bottom: 2px solid var(--tc-insert-text);
 }
 
 .suggestion-delete {
-    color: #c62828;
+    background-color: var(--tc-delete-bg);
+    color: var(--tc-delete-text);
     text-decoration: line-through;
-    background-color: #ffebee;
+    opacity: 0.8;
 }
 
-.suggestion-node:hover::after {
-    content: attr(data-author);
-    position: absolute;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #333;
-    color: white;
-    padding: 4px 8px;
-    border-radius: 4px;
+.suggestion-format {
+    background-color: var(--tc-format-bg);
+    color: var(--tc-format-text);
+    border-bottom: 2px dashed var(--tc-format-text);
+}
+
+/* Suggestion Tooltip */
+.suggestion-node:hover {
+    filter: brightness(0.95);
+}
+
+/* Review Sidebar */
+.tc-review-sidebar {
+    position: fixed;
+    top: 0;
+    right: -320px;
+    width: var(--tc-sidebar-width);
+    height: 100vh;
+    background: #ffffff;
+    box-shadow: -5px 0 20px rgba(0, 0, 0, 0.1);
+    z-index: 2100;
+    display: flex;
+    flex-direction: column;
+    transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border-left: 1px solid #e5e7eb;
+    font-family: 'Inter', system-ui, sans-serif;
+}
+
+.tc-review-sidebar.open {
+    right: 0;
+}
+
+.tc-header {
+    padding: 20px;
+    border-bottom: 1px solid #e5e7eb;
+    background: #f9fafb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.tc-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.tc-close {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: #9ca3af;
+}
+
+/* Change Card */
+.tc-card {
+    margin: 12px;
+    padding: 16px;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    background: #ffffff;
+    transition: all 0.2s;
+}
+
+.tc-card:hover {
+    border-color: #6366f1;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.tc-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.tc-author {
+    font-weight: 600;
+    font-size: 13px;
+    color: #111827;
+}
+
+.tc-type-badge {
     font-size: 10px;
-    white-space: nowrap;
-    z-index: 10;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 700;
+    text-transform: uppercase;
 }
 
-/* Tracking Status */
-#track-changes-btn.on {
-    background-color: #2e7d32;
+.badge-insert {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.badge-delete {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.tc-content-preview {
+    font-size: 13px;
+    color: #4b5563;
+    background: #f3f4f6;
+    padding: 8px;
+    border-radius: 6px;
+    margin-bottom: 12px;
+    font-style: italic;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tc-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.tc-btn {
+    flex: 1;
+    padding: 8px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+}
+
+.tc-btn-accept {
+    background: #10b981;
     color: white;
 }
 
-#track-changes-btn.off {
-    opacity: 0.7;
+.tc-btn-accept:hover {
+    background: #059669;
+}
+
+.tc-btn-reject {
+    background: #ffffff;
+    border-color: #e5e7eb;
+    color: #ef4444;
+}
+
+.tc-btn-reject:hover {
+    background: #fee2e2;
+}
+
+/* Status Bar Widget */
+.tc-status-widget {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 12px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.tc-status-widget.active {
+    color: #ef4444;
+    border-color: #fca5a5;
+    background: #fef2f2;
+}
+
+.tc-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #d1d5db;
+}
+
+.tc-status-widget.active .tc-dot {
+    background: #ef4444;
+    box-shadow: 0 0 8px #ef4444;
+    animation: tc-pulse 2s infinite;
+}
+
+@keyframes tc-pulse {
+    0% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.4;
+    }
+
+    100% {
+        opacity: 1;
+    }
 }
