@@ -159,7 +159,7 @@ export const TOOLBAR_PRESETS: Record<string, ToolbarPreset> = {
         items: [
             'undo', 'redo', 'separator-1',
             'bold', 'italic', 'underline', 'separator-2',
-            'bullet-list', 'insert-link'
+            'bullet-list', 'insert-link', 'source-view'
         ]
     },
     'standard': {
@@ -172,7 +172,7 @@ export const TOOLBAR_PRESETS: Record<string, ToolbarPreset> = {
             'bold', 'italic', 'underline', 'strikethrough', 'separator-3',
             'bullet-list', 'numbered-list', 'indent', 'outdent', 'separator-4',
             'align-left', 'align-center', 'align-right', 'separator-5',
-            'insert-link', 'insert-image', 'insert-table', 'blockquote', 'hr'
+            'insert-link', 'insert-image', 'insert-table', 'blockquote', 'hr', 'source-view'
         ]
     },
     'blogging': {

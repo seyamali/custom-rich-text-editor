@@ -237,17 +237,15 @@ export const SourceViewPlugin = {
             }
         }
 
-        // PERMISSIVE CLEANING: Allow scripts so interactive logic (scroll reveal, etc) works
-        const sanitizedHtml = SourceViewPlugin.sanitizeHTML(doc.body.innerHTML);
-
         editor.getInternalEditor().update(() => {
-            const parser = new DOMParser();
-            const dom = parser.parseFromString(sanitizedHtml, 'text/html');
-            const nodes = $generateNodesFromDOM(editor.getInternalEditor(), dom);
+            // Convert both head (metadata/styles) and body (content) tags to nodes
+            // RawHtmlNode and StyleNode will capture the structural pieces.
+            const headNodes = $generateNodesFromDOM(editor.getInternalEditor(), doc.head);
+            const bodyNodes = $generateNodesFromDOM(editor.getInternalEditor(), doc.body);
 
             const root = $getRoot();
             root.clear();
-            root.append(...nodes);
+            root.append(...headNodes, ...bodyNodes);
         });
     },
 
@@ -305,9 +303,10 @@ export const SourceViewPlugin = {
             if (node.nodeType === Node.ELEMENT_NODE) {
                 const el = node as HTMLElement;
                 if (el.tagName === 'SCRIPT') {
-                    // Remove scripts from body to avoid seeing code in Visual editor
-                    el.parentNode?.removeChild(el);
-                    return;
+                    // We now have RawHtmlNode to handle scripts, so we can keep them in the DOM tree
+                    // but they are sanitized by RawHtmlNode's own display:none logic.
+                    // However, we MUST ensure they don't execute twice if injected multiple times.
+                    // For now, we keep them so $generateNodesFromDOM can see them.
                 }
                 // Keep all attributes except event handlers
                 Array.from(el.attributes).forEach(attr => {

@@ -27,6 +27,7 @@ import { LayoutNode } from '../plugins/layout/layout-node';
 import { StyleNode } from '../plugins/advanced/style-node';
 import { AssetLinkNode } from '../plugins/advanced/asset-link-node';
 import { IconNode } from '../plugins/formatting/icon-node';
+import { RawHtmlNode } from '../plugins/advanced/raw-html-node';
 
 import { ParagraphNode } from 'lexical';
 import { HeadingNode } from '@lexical/rich-text';
@@ -112,7 +113,8 @@ export class AureliaEditor {
                 StyleNode,
                 AssetLinkNode,
                 SpanNode,
-                IconNode
+                IconNode,
+                RawHtmlNode
             ],
             theme: {
                 root: 'editor-container',
