@@ -6,8 +6,8 @@ export default defineConfig({
     build: {
         lib: {
             entry: resolve(__dirname, 'src/index.ts'),
-            name: 'OmniEditor',
-            fileName: 'omni-editor',
+            name: 'AureliaEditor',
+            fileName: 'aurelia-editor',
             formats: ['es', 'umd']
         },
         rollupOptions: {
