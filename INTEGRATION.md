@@ -28,17 +28,13 @@ Create a container div in your HTML file:
 ### 2. Initialization Script
 
 ```typescript
-import { AureliaEditor, EDITOR_LAYOUT_HTML } from '@seyamali/aurelia-editor';
-import '@seyamali/aurelia-editor/dist/style.css'; 
+import { AureliaEditor } from '@seyamali/aurelia-editor';
+import '@seyamali/aurelia-editor/dist/aurelia-editor.css'; 
 
-// 1. Inject the Editor Scaffold (Toolbar, Sidebar, Canvas)
+// 1. Mount the Full Editor (Toolbar + Engine) 
 const app = document.getElementById('app');
 if (app) {
-    app.innerHTML = EDITOR_LAYOUT_HTML;
-
-    // 2. Initialize the Editor Engine
-    const canvas = document.getElementById('editor-canvas') as HTMLDivElement;
-    const editor = new AureliaEditor(canvas);
+    const editor = await AureliaEditor.create(app);
 }
 ```
 
@@ -50,8 +46,8 @@ Since React manages the DOM virtually, we use a `ref` and `useEffect` to safely 
 
 ```tsx
 import React, { useEffect, useRef } from 'react';
-import { AureliaEditor, EDITOR_LAYOUT_HTML } from '@seyamali/aurelia-editor';
-import '@seyamali/aurelia-editor/dist/style.css';
+import { AureliaEditor } from '@seyamali/aurelia-editor';
+import '@seyamali/aurelia-editor/dist/aurelia-editor.css';
 
 export const EditorComponent = () => {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -59,14 +55,9 @@ export const EditorComponent = () => {
 
     useEffect(() => {
         if (containerRef.current && !editorInstance.current) {
-            // Inject Layout
-            containerRef.current.innerHTML = EDITOR_LAYOUT_HTML;
-            
-            // Mount Editor
-            const canvas = containerRef.current.querySelector('#editor-canvas') as HTMLDivElement;
-            if (canvas) {
-                editorInstance.current = new AureliaEditor(canvas);
-            }
+            AureliaEditor.create(containerRef.current).then(instance => {
+                editorInstance.current = instance;
+            });
         }
     }, []);
 
@@ -103,19 +94,15 @@ Use the `onMounted` hook to ensure the DOM is ready before initializing the edit
 ```vue
 <script setup>
 import { onMounted, ref } from 'vue';
-import { AureliaEditor, EDITOR_LAYOUT_HTML } from '@seyamali/aurelia-editor';
-import '@seyamali/aurelia-editor/dist/style.css';
+import { AureliaEditor } from '@seyamali/aurelia-editor';
+import '@seyamali/aurelia-editor/dist/aurelia-editor.css';
 
 const container = ref(null);
 let editor = null;
 
-onMounted(() => {
+onMounted(async () => {
     if (container.value) {
-        container.value.innerHTML = EDITOR_LAYOUT_HTML;
-        const canvas = container.value.querySelector('#editor-canvas');
-        if (canvas) {
-            editor = new AureliaEditor(canvas);
-        }
+        editor = await AureliaEditor.create(container.value);
     }
 });
 </script>
@@ -141,26 +128,23 @@ Use `AfterViewInit` to guarantee the view query is available.
 
 ```typescript
 import { Component, ElementRef, ViewChild, AfterViewInit, ViewEncapsulation } from '@angular/core';
-import { AureliaEditor, EDITOR_LAYOUT_HTML } from '@seyamali/aurelia-editor';
+import { AureliaEditor } from '@seyamali/aurelia-editor';
 
 @Component({
   selector: 'app-editor',
   template: `<div #editorContainer class="editor-host"></div>`,
   styles: [`
     .editor-host { height: 100vh; display: block; }
-    /* You may need to import CSS in your global styles or angular.json */
   `],
-  encapsulation: ViewEncapsulation.None // Required for global editor styles to apply
+  encapsulation: ViewEncapsulation.None
 })
 export class EditorComponent implements AfterViewInit {
   @ViewChild('editorContainer') container!: ElementRef<HTMLDivElement>;
   editor: AureliaEditor | null = null;
 
-  ngAfterViewInit() {
+  async ngAfterViewInit() {
     if (this.container) {
-      this.container.nativeElement.innerHTML = EDITOR_LAYOUT_HTML;
-      const canvas = this.container.nativeElement.querySelector('#editor-canvas') as HTMLDivElement;
-      this.editor = new AureliaEditor(canvas);
+      this.editor = await AureliaEditor.create(this.container.nativeElement);
     }
   }
 }
@@ -181,11 +165,9 @@ export class EditorComponent implements AfterViewInit {
   let container;
   let editor;
 
-  onMount(() => {
+  onMount(async () => {
     if (container) {
-      container.innerHTML = EDITOR_LAYOUT_HTML;
-      const canvas = container.querySelector('#editor-canvas');
-      editor = new AureliaEditor(canvas);
+      editor = await AureliaEditor.create(container);
     }
   });
 </script>
@@ -206,11 +188,11 @@ export class EditorComponent implements AfterViewInit {
 The editor requires its CSS to render correctly. Ensure you import the stylesheet in your entry point (e.g., `main.ts`, `_app.tsx`, or `index.js`).
 
 ```javascript
-import '@seyamali/aurelia-editor/dist/style.css';
+import '@seyamali/aurelia-editor/dist/aurelia-editor.css';
 ```
 
 If you are using a bundler that doesn't support CSS imports, link it in your HTML:
 
 ```html
-<link rel="stylesheet" href="path/to/node_modules/@seyamali/aurelia-editor/dist/style.css">
+<link rel="stylesheet" href="path/to/node_modules/@seyamali/aurelia-editor/dist/aurelia-editor.css">
 ```

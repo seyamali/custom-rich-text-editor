@@ -32,9 +32,48 @@ import { ParagraphNode } from 'lexical';
 import { HeadingNode } from '@lexical/rich-text';
 import { LinkNode, AutoLinkNode } from '@lexical/link';
 
+import { EDITOR_LAYOUT_HTML } from '../ui/layout';
+
 export class AureliaEditor {
     private editor: LexicalEditor;
     private registry: PluginRegistry;
+
+    /**
+     * Static factory method to create a full-featured editor with toolbar and UI.
+     * This is the recommended way to initialize the editor in frameworks like Angular/React.
+     */
+    static async create(container: HTMLElement): Promise<AureliaEditor> {
+        // 1. Inject the full editor layout
+        container.innerHTML = EDITOR_LAYOUT_HTML;
+
+        // 2. Find the canvas element
+        const canvas = container.querySelector('#editor-canvas') as HTMLDivElement;
+        if (!canvas) {
+            throw new Error("Failed to initialize editor: #editor-canvas not found in layout.");
+        }
+
+        // 3. Initialize the engine
+        const editor = new AureliaEditor(canvas);
+        const internalEditor = editor.getInternalEditor();
+
+        // 4. Initialize UI and Toolbar systems
+        // We use dynamic imports to avoid circular dependencies
+        const { ToolbarSystem } = await import('../plugins/configuration/toolbar-system');
+        const { setupToolbarState } = await import('../ui/toolbar-logic/state-logic');
+        const { setupLinkPopover } = await import('../plugins/media/link-popover-ui');
+        const { setupCodeBlockPopover } = await import('../ui/code-block-popover-ui');
+        const { setupTablePopover } = await import('../ui/table-popover-ui');
+
+        // Initialize core UI systems
+        setupToolbarState(internalEditor);
+        setupLinkPopover(internalEditor);
+        setupCodeBlockPopover(internalEditor);
+        setupTablePopover(internalEditor);
+
+        ToolbarSystem.init(editor, internalEditor);
+
+        return editor;
+    }
 
     constructor(element: HTMLDivElement) {
 

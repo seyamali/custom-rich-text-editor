@@ -16,9 +16,9 @@ pnpm-debug.log*
 .github/
 .gitignore
 
-# Documentation (if you don't want it in the package)
+# Documentation (if you want it in the package, comment these out)
 docs/
-INTEGRATION.md
+# INTEGRATION.md included in package
 
 # Editor Configs
 .vscode/
